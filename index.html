@@ -591,14 +591,22 @@ const OBJS = {
   },
 
   'balcony-semi': () => {
-    const R=55,items=[];
-    items.push(new fabric.Path(`M ${-R} 0 A ${R} ${R} 0 0 0 ${R} 0`,{fill:'rgba(176,220,245,0.2)',stroke:'#1a1a2e',strokeWidth:3}));
+    // 半圓陽台：平底靠牆（水平線在上），弧形向下突出
+    const R=55, items=[];
+    // 弧形區域：從左到右，弧向下突出（sweep-flag=1）
+    items.push(new fabric.Path(`M ${-R} 0 A ${R} ${R} 0 0 1 ${R} 0`,{
+      fill:'rgba(176,220,245,0.2)', stroke:'#1a1a2e', strokeWidth:3
+    }));
+    // 放射分隔線：從中心往弧形方向（向下）
     for(let i=1;i<=4;i++){
-      const angle=(Math.PI/5)*i;
-      items.push(new fabric.Line([0,0,-R*Math.cos(angle),-R*Math.sin(angle)],{stroke:'#4a9fc4',strokeWidth:1.5,opacity:0.7}));
+      const angle = (Math.PI/5)*i; // 0到PI之間均分
+      const x2 = R*Math.cos(Math.PI - angle); // 從右到左
+      const y2 = R*Math.sin(Math.PI - angle); // 向下
+      items.push(new fabric.Line([0,0,x2,y2],{stroke:'#4a9fc4',strokeWidth:1.5,opacity:0.7}));
     }
+    // 平底橫線（靠牆那側）
     items.push(new fabric.Line([-R,0,R,0],{stroke:'#1a1a2e',strokeWidth:4}));
-    return new fabric.Group(items,{left:snap(cx()),top:snap(cy())});
+    return new fabric.Group(items,{left:snap(cx()-R),top:snap(cy()-R/2)});
   },
 
   pillar: () => new fabric.Group([
