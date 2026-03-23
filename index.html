@@ -9,330 +9,112 @@
 <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
 <style>
 :root {
-  --bg: #1a1a2e;
-  --sidebar: #16213e;
-  --panel: #0f3460;
-  --accent: #e94560;
-  --accent2: #f5a623;
-  --text: #eaeaea;
-  --muted: #8892a4;
-  --border: #2a2a4a;
-  --btn: #1e2a45;
-  --btn-hover: #2a3a5a;
-  --green: #2ecc71;
-  --radius: 10px;
+  --bg: #1a1a2e; --sidebar: #16213e; --panel: #0f3460;
+  --accent: #e94560; --accent2: #f5a623; --text: #eaeaea;
+  --muted: #8892a4; --border: #2a2a4a; --btn: #1e2a45;
+  --btn-hover: #2a3a5a; --green: #2ecc71; --radius: 10px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: "Microsoft JhengHei", -apple-system, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  display: flex;
-  height: 100vh;
-  overflow: hidden;
-  touch-action: none;
-}
+body { font-family: "Microsoft JhengHei", -apple-system, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; touch-action: none; }
 
-/* ── SIDEBAR ── */
-.sidebar {
-  width: 270px;
-  min-width: 270px;
-  background: var(--sidebar);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  overflow-x: hidden;
-  z-index: 1500;
-  transition: transform 0.3s ease;
-}
-.sidebar-header {
-  padding: 16px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.sidebar-header .logo {
-  font-size: 1.3rem;
-  font-weight: 900;
-  color: var(--accent);
-  letter-spacing: -1px;
-}
-.sidebar-header .version {
-  font-size: 0.7rem;
-  background: var(--accent);
-  color: white;
-  padding: 2px 7px;
-  border-radius: 20px;
-  font-weight: bold;
-}
-.section {
-  padding: 12px;
-  border-bottom: 1px solid var(--border);
-}
-.section-title {
-  font-size: 0.72rem;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  margin-bottom: 8px;
-  font-weight: 700;
-}
-.tool-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-}
-.tool-btn {
-  background: var(--btn);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text);
-  cursor: pointer;
-  padding: 8px 4px;
-  text-align: center;
-  font-size: 0.72rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  transition: all 0.15s;
-  line-height: 1.2;
-}
+.sidebar { width: 270px; min-width: 270px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; z-index: 1500; transition: transform 0.3s ease; }
+.sidebar-header { padding: 14px 16px; background: var(--panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.logo { font-size: 1.2rem; font-weight: 900; color: var(--accent); letter-spacing: -1px; }
+.version { font-size: 0.7rem; background: var(--accent); color: white; padding: 2px 8px; border-radius: 20px; font-weight: bold; }
+.section { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.section-title { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; font-weight: 700; }
+.tool-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.tool-btn { background: var(--btn); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); cursor: pointer; padding: 7px 4px; text-align: center; font-size: 0.7rem; display: flex; flex-direction: column; align-items: center; gap: 3px; transition: all 0.15s; line-height: 1.2; }
 .tool-btn:hover { background: var(--btn-hover); border-color: var(--accent); }
 .tool-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
-.tool-btn .icon { font-size: 1.2rem; }
-
-/* color swatches */
-.color-row {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.swatch {
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: transform 0.15s, border-color 0.15s;
-}
+.tool-btn .icon { font-size: 1.1rem; }
+.color-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.swatch { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.15s, border-color 0.15s; }
 .swatch:hover { transform: scale(1.15); border-color: white; }
 .swatch.active { border-color: var(--accent2); transform: scale(1.15); }
-
-/* snap toggle */
-.toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 0;
-}
-.toggle-label { font-size: 0.8rem; color: var(--text); }
-.toggle {
-  position: relative; width: 36px; height: 20px;
-  background: var(--border); border-radius: 20px; cursor: pointer;
-  transition: background 0.2s;
-}
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+.toggle-label { font-size: 0.78rem; }
+.toggle { position: relative; width: 34px; height: 18px; background: var(--border); border-radius: 20px; cursor: pointer; transition: background 0.2s; }
 .toggle.on { background: var(--green); }
-.toggle::after {
-  content: '';
-  position: absolute; top: 2px; left: 2px;
-  width: 16px; height: 16px;
-  background: white; border-radius: 50%;
-  transition: left 0.2s;
-}
+.toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: white; border-radius: 50%; transition: left 0.2s; }
 .toggle.on::after { left: 18px; }
-
-/* action buttons */
-.action-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  padding: 12px;
-}
-.act-btn {
-  padding: 10px;
-  border: none;
-  border-radius: var(--radius);
-  font-size: 0.8rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: opacity 0.15s;
-  display: flex; align-items: center; justify-content: center; gap: 5px;
-}
+.action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 12px; }
+.act-btn { padding: 9px; border: none; border-radius: var(--radius); font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; justify-content: center; gap: 4px; }
 .act-btn:hover { opacity: 0.85; }
 .act-btn.undo { background: var(--btn); color: var(--text); border: 1px solid var(--border); }
 .act-btn.redo { background: var(--btn); color: var(--text); border: 1px solid var(--border); }
 .act-btn.clear { background: #3a1a2a; color: var(--accent); border: 1px solid var(--accent); }
 .act-btn.export { background: var(--green); color: white; }
 
-/* ── CANVAS AREA ── */
-.canvas-wrap {
-  flex: 1;
-  position: relative;
-  background: #f5f0e8;
-  background-image:
-    linear-gradient(rgba(100,100,200,0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(100,100,200,0.08) 1px, transparent 1px);
-  background-size: 20px 20px;
-  overflow: hidden;
-}
-#drawingCanvas { display: block; }
+.canvas-wrap { flex: 1; position: relative; background: #f5f0e8; background-image: linear-gradient(rgba(100,100,200,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(100,100,200,0.08) 1px, transparent 1px); background-size: 20px 20px; overflow: hidden; }
+#mainCanvas { display: block; }
 
-/* ── STATUS BAR ── */
-.statusbar {
-  position: absolute;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(22, 33, 62, 0.92);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 6px 16px;
-  font-size: 0.75rem;
-  color: var(--muted);
-  backdrop-filter: blur(8px);
-  pointer-events: none;
-  white-space: nowrap;
-}
+/* 點對點畫牆預覽點 */
+.wall-cursor { position: absolute; width: 10px; height: 10px; background: var(--accent); border-radius: 50%; pointer-events: none; transform: translate(-50%,-50%); display: none; z-index: 100; box-shadow: 0 0 0 3px rgba(233,69,96,0.3); }
+.wall-start-dot { position: absolute; width: 10px; height: 10px; background: var(--accent2); border-radius: 50%; pointer-events: none; transform: translate(-50%,-50%); z-index: 101; display: none; box-shadow: 0 0 0 4px rgba(245,166,35,0.3); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{box-shadow:0 0 0 4px rgba(245,166,35,0.3)} 50%{box-shadow:0 0 0 8px rgba(245,166,35,0.1)} }
+
+.statusbar { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); background: rgba(22,33,62,0.92); border: 1px solid var(--border); border-radius: 20px; padding: 5px 14px; font-size: 0.72rem; color: var(--muted); backdrop-filter: blur(8px); pointer-events: none; white-space: nowrap; }
 .statusbar span { color: var(--accent2); font-weight: bold; }
+.hint-bar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: rgba(233,69,96,0.9); border-radius: 20px; padding: 5px 14px; font-size: 0.75rem; color: white; pointer-events: none; display: none; white-space: nowrap; }
 
-/* ── PROP PANEL ── */
-.prop-panel {
-  position: absolute;
-  top: 16px; right: 16px;
-  background: var(--sidebar);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px;
-  width: 200px;
-  display: none;
-  z-index: 1600;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
-}
-.prop-panel h4 {
-  font-size: 0.8rem;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-}
-.prop-panel h4 .close-btn {
-  cursor: pointer; color: var(--accent); font-size: 1rem;
-}
-.prop-row { margin-bottom: 10px; }
-.prop-row label { font-size: 0.75rem; color: var(--muted); display: block; margin-bottom: 4px; }
-.prop-row input[type=text] {
-  width: 100%; padding: 6px 8px;
-  background: var(--btn); border: 1px solid var(--border);
-  border-radius: 6px; color: var(--text); font-size: 0.8rem;
-}
+.prop-panel { position: absolute; top: 16px; right: 16px; background: var(--sidebar); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; width: 200px; display: none; z-index: 1600; box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+.prop-panel h4 { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+.prop-panel h4 .close-btn { cursor: pointer; color: var(--accent); font-size: 1rem; }
+.prop-row { margin-bottom: 9px; }
+.prop-row label { font-size: 0.72rem; color: var(--muted); display: block; margin-bottom: 3px; }
+.prop-row input[type=text] { width: 100%; padding: 6px 8px; background: var(--btn); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 0.78rem; }
 .prop-row input[type=range] { width: 100%; accent-color: var(--accent); }
-.prop-row .angle-val { font-size: 0.75rem; color: var(--accent2); text-align: right; }
+.prop-row .angle-val { font-size: 0.72rem; color: var(--accent2); text-align: right; }
+.line-style-row { display: flex; gap: 6px; }
+.line-btn { flex: 1; padding: 6px; background: var(--btn); border: 1px solid var(--border); border-radius: 6px; color: var(--text); cursor: pointer; font-size: 0.72rem; text-align: center; }
+.line-btn.active { background: var(--accent); border-color: var(--accent); }
 
-/* ── MOBILE ── */
-.menu-toggle {
-  display: none;
-  position: fixed;
-  top: 12px; left: 12px;
-  z-index: 2000;
-  background: var(--accent);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 46px; height: 46px;
-  font-size: 1.2rem;
-  cursor: pointer;
-  align-items: center; justify-content: center;
-  box-shadow: 0 4px 12px rgba(233,69,96,0.4);
-}
-.overlay {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 1400;
-}
+.menu-toggle { display: none; position: fixed; top: 12px; left: 12px; z-index: 2000; background: var(--accent); color: white; border: none; border-radius: 50%; width: 44px; height: 44px; font-size: 1.1rem; cursor: pointer; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(233,69,96,0.4); }
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1400; }
 @media (max-width: 768px) {
   .menu-toggle { display: flex; }
-  .sidebar {
-    position: fixed; top: 0; left: 0; height: 100%;
-    transform: translateX(-100%);
-  }
+  .sidebar { position: fixed; top: 0; left: 0; height: 100%; transform: translateX(-100%); }
   .sidebar.open { transform: translateX(0); }
   .overlay.open { display: block; }
   .prop-panel { top: auto; bottom: 16px; right: 8px; left: 8px; width: auto; }
 }
-
-/* ── TOOLTIP ── */
-.tooltip {
-  position: absolute;
-  background: var(--panel);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 0.72rem;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s;
-  z-index: 3000;
-  white-space: nowrap;
-}
 </style>
 </head>
 <body>
-
 <button class="menu-toggle" onclick="toggleSidebar()">🛠️</button>
 <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
-<!-- ── SIDEBAR ── -->
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <div>
-      <div class="logo">格局神器</div>
-      <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">Ethan Floor Plan Tool</div>
-    </div>
+    <div><div class="logo">格局神器</div><div style="font-size:0.65rem;color:var(--muted);margin-top:1px;">Ethan Floor Plan Tool</div></div>
     <span class="version">V3</span>
   </div>
 
-  <!-- 模式 -->
   <div class="section">
     <div class="section-title">✏️ 繪圖模式</div>
     <div class="tool-grid">
-      <button class="tool-btn active" id="btn-select" onclick="setMode('select')">
-        <span class="icon">✋</span>選取
-      </button>
-      <button class="tool-btn" id="btn-wall" onclick="setMode('wall')">
-        <span class="icon">➖</span>畫牆
-      </button>
-      <button class="tool-btn" onclick="addRoom()">
-        <span class="icon">⬜</span>房間
-      </button>
-      <button class="tool-btn" onclick="addText()">
-        <span class="icon">📝</span>文字
-      </button>
-      <button class="tool-btn" onclick="addDimension()">
-        <span class="icon">📏</span>標尺
-      </button>
+      <button class="tool-btn active" id="btn-select" onclick="setMode('select')"><span class="icon">✋</span>選取</button>
+      <button class="tool-btn" id="btn-wall" onclick="setMode('wall')"><span class="icon">➖</span>實線牆</button>
+      <button class="tool-btn" id="btn-dash" onclick="setMode('dash')"><span class="icon">┄</span>虛線</button>
+      <button class="tool-btn" onclick="addRoom()"><span class="icon">⬜</span>房間</button>
+      <button class="tool-btn" onclick="addText()"><span class="icon">📝</span>文字</button>
+      <button class="tool-btn" onclick="addDimension()"><span class="icon">📏</span>標尺</button>
     </div>
   </div>
 
-  <!-- 門窗 -->
   <div class="section">
     <div class="section-title">🚪 門窗陽台</div>
     <div class="tool-grid">
-      <button class="tool-btn" onclick="addObj('door')"><span class="icon">🚪</span>門</button>
+      <button class="tool-btn" onclick="addObj('door')"><span class="icon">🚪</span>推門</button>
+      <button class="tool-btn" onclick="addObj('door-slide')"><span class="icon">↔️</span>拉門</button>
       <button class="tool-btn" onclick="addObj('window')"><span class="icon">🪟</span>窗</button>
-      <button class="tool-btn" onclick="addObj('balcony')"><span class="icon">🧱</span>陽台</button>
+      <button class="tool-btn" onclick="addObj('balcony')"><span class="icon">🏗️</span>陽台</button>
       <button class="tool-btn" onclick="addObj('pillar')"><span class="icon">⬛</span>柱子</button>
       <button class="tool-btn" onclick="addObj('compass')"><span class="icon">🧭</span>指北</button>
     </div>
   </div>
 
-  <!-- 樓梯 -->
   <div class="section">
     <div class="section-title">🪜 樓梯</div>
     <div class="tool-grid">
@@ -342,7 +124,6 @@ body {
     </div>
   </div>
 
-  <!-- 衛浴 -->
   <div class="section">
     <div class="section-title">🚿 衛浴設備</div>
     <div class="tool-grid">
@@ -353,7 +134,6 @@ body {
     </div>
   </div>
 
-  <!-- 廚房 -->
   <div class="section">
     <div class="section-title">🍳 廚房設備</div>
     <div class="tool-grid">
@@ -363,7 +143,6 @@ body {
     </div>
   </div>
 
-  <!-- 家具 -->
   <div class="section">
     <div class="section-title">🛋️ 家具</div>
     <div class="tool-grid">
@@ -376,61 +155,51 @@ body {
     </div>
   </div>
 
-  <!-- 填色 -->
   <div class="section">
     <div class="section-title">🎨 填色</div>
     <div class="color-row">
-      <div class="swatch active" style="background:#FAFAFA;" data-color="#FAFAFA" onclick="applyColor(this)"></div>
-      <div class="swatch" style="background:#E6E6FA;" data-color="#E6E6FA" onclick="applyColor(this)"></div>
-      <div class="swatch" style="background:#F5DEB3;" data-color="#F5DEB3" onclick="applyColor(this)"></div>
-      <div class="swatch" style="background:#B0C4DE;" data-color="#B0C4DE" onclick="applyColor(this)"></div>
-      <div class="swatch" style="background:#F0FFF0;" data-color="#F0FFF0" onclick="applyColor(this)"></div>
-      <div class="swatch" style="background:#FFE4E1;" data-color="#FFE4E1" onclick="applyColor(this)"></div>
-      <div class="swatch" style="background:#FFF8DC;" data-color="#FFF8DC" onclick="applyColor(this)"></div>
-      <div class="swatch" style="background:transparent; border:1px solid #888;" data-color="transparent" onclick="applyColor(this)"></div>
+      <div class="swatch active" style="background:#FAFAFA" data-color="#FAFAFA" onclick="applyColor(this)"></div>
+      <div class="swatch" style="background:#E6E6FA" data-color="#E6E6FA" onclick="applyColor(this)"></div>
+      <div class="swatch" style="background:#F5DEB3" data-color="#F5DEB3" onclick="applyColor(this)"></div>
+      <div class="swatch" style="background:#B0C4DE" data-color="#B0C4DE" onclick="applyColor(this)"></div>
+      <div class="swatch" style="background:#F0FFF0" data-color="#F0FFF0" onclick="applyColor(this)"></div>
+      <div class="swatch" style="background:#FFE4E1" data-color="#FFE4E1" onclick="applyColor(this)"></div>
+      <div class="swatch" style="background:#FFF8DC" data-color="#FFF8DC" onclick="applyColor(this)"></div>
+      <div class="swatch" style="background:transparent;border:1px solid #888" data-color="transparent" onclick="applyColor(this)"></div>
     </div>
   </div>
 
-  <!-- 設定 -->
   <div class="section">
     <div class="section-title">⚙️ 設定</div>
     <div class="toggle-row">
       <span class="toggle-label">格線吸附</span>
       <div class="toggle on" id="snapToggle" onclick="toggleSnap()"></div>
     </div>
-    <div class="toggle-row" style="margin-top:8px;">
+    <div class="toggle-row" style="margin-top:6px">
       <span class="toggle-label">顯示格線</span>
       <div class="toggle on" id="gridToggle" onclick="toggleGrid()"></div>
     </div>
   </div>
 
-  <!-- 操作 -->
   <div class="action-row">
     <button class="act-btn undo" onclick="undo()">↩️ 復原</button>
     <button class="act-btn redo" onclick="redo()">↪️ 重做</button>
     <button class="act-btn clear" onclick="clearAll()">🗑️ 清空</button>
     <button class="act-btn export" onclick="exportImg()">💾 存圖</button>
   </div>
-
-  <div style="padding:0 12px 12px; font-size:0.68rem; color:var(--muted); text-align:center;">
-    Ctrl+Z 復原 · Ctrl+Y 重做 · Del 刪除
-  </div>
+  <div style="padding:0 12px 12px;font-size:0.65rem;color:var(--muted);text-align:center;">Ctrl+Z 復原 · Del 刪除 · Esc 取消</div>
 </div>
 
-<!-- ── CANVAS ── -->
 <div class="canvas-wrap" id="canvasWrap">
   <canvas id="mainCanvas"></canvas>
-  <div class="statusbar" id="statusbar">
-    模式：<span id="modeLabel">選取</span> ｜ 物件：<span id="objCount">0</span> ｜ 縮放：<span id="zoomLevel">100%</span>
-  </div>
+  <div class="wall-cursor" id="wallCursor"></div>
+  <div class="wall-start-dot" id="wallStartDot"></div>
+  <div class="hint-bar" id="hintBar"></div>
+  <div class="statusbar">模式：<span id="modeLabel">選取</span> ｜ 物件：<span id="objCount">0</span></div>
 </div>
 
-<!-- ── PROP PANEL ── -->
 <div class="prop-panel" id="propPanel">
-  <h4>
-    物件屬性
-    <span class="close-btn" onclick="closeProp()">✕</span>
-  </h4>
+  <h4>物件屬性 <span class="close-btn" onclick="closeProp()">✕</span></h4>
   <div class="prop-row">
     <label>文字標籤</label>
     <input type="text" id="propLabel" placeholder="輸入標籤..." oninput="updateLabel()">
@@ -440,8 +209,15 @@ body {
     <input type="range" id="propAngle" min="0" max="360" value="0" oninput="updateAngle()">
   </div>
   <div class="prop-row">
+    <label>線條樣式</label>
+    <div class="line-style-row">
+      <button class="line-btn active" id="lineSolid" onclick="setLineStyle('solid')">實線</button>
+      <button class="line-btn" id="lineDash" onclick="setLineStyle('dash')">虛線</button>
+    </div>
+  </div>
+  <div class="prop-row">
     <label>線條顏色</label>
-    <input type="color" id="propStroke" value="#000000" oninput="updateStroke()" style="width:100%;height:28px;border:none;cursor:pointer;background:none;">
+    <input type="color" id="propStroke" value="#1a1a2e" oninput="updateStroke()" style="width:100%;height:26px;border:none;cursor:pointer;background:none;">
   </div>
 </div>
 
@@ -450,48 +226,47 @@ body {
 // 狀態
 // ══════════════════════════════════════════
 let canvas, mode = 'select';
-let isDown = false, drawLine = null;
 let snapOn = true, gridOn = true;
+let history = [], histIdx = -1;
+let suppressHist = false;
 const GRID = 20;
-let history = [], historyIndex = -1;
-let suppressHistory = false;
+
+// 點對點畫牆
+let wallMode_started = false;
+let wallStartX = 0, wallStartY = 0;
+let wallPreviewLine = null;
 
 // ══════════════════════════════════════════
 // 初始化
 // ══════════════════════════════════════════
 window.onload = () => {
   const wrap = document.getElementById('canvasWrap');
-  const w = wrap.clientWidth;
-  const h = wrap.clientHeight;
-
   canvas = new fabric.Canvas('mainCanvas', {
-    width: w, height: h,
+    width: wrap.clientWidth, height: wrap.clientHeight,
     backgroundColor: 'rgba(0,0,0,0)',
     selection: true,
     preserveObjectStacking: true,
   });
 
-  canvas.on('mouse:down', onDown);
-  canvas.on('mouse:move', onMove);
-  canvas.on('mouse:up', onUp);
+  // 牆壁/虛線用 canvas 原生事件（點對點）
+  canvas.upperCanvasEl.addEventListener('mousemove', onWallMouseMove);
+  canvas.upperCanvasEl.addEventListener('click', onWallClick);
+
   canvas.on('selection:created', showProp);
   canvas.on('selection:updated', showProp);
   canvas.on('selection:cleared', () => { document.getElementById('propPanel').style.display = 'none'; });
   canvas.on('object:modified', saveHistory);
-  canvas.on('object:added', () => { if (!suppressHistory) saveHistory(); updateStatus(); });
-  canvas.on('object:removed', () => { updateStatus(); });
+  canvas.on('object:added', () => { if (!suppressHist) saveHistory(); updateStatus(); });
+  canvas.on('object:removed', updateStatus);
 
-  // 鍵盤
   document.addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT') return;
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); }
-    if (e.key === 'Delete' || e.key === 'Backspace') {
-      if (document.activeElement.tagName !== 'INPUT') deleteSelected();
-    }
+    if ((e.ctrlKey||e.metaKey) && e.key==='z') { e.preventDefault(); undo(); }
+    if ((e.ctrlKey||e.metaKey) && e.key==='y') { e.preventDefault(); redo(); }
+    if (e.key==='Delete'||e.key==='Backspace') deleteSelected();
+    if (e.key==='Escape') cancelWall();
   });
 
-  // RWD
   window.addEventListener('resize', () => {
     canvas.setWidth(wrap.clientWidth);
     canvas.setHeight(wrap.clientHeight);
@@ -503,261 +278,364 @@ window.onload = () => {
 };
 
 // ══════════════════════════════════════════
-// Snap helper
+// Snap
 // ══════════════════════════════════════════
-function snap(v) { return snapOn ? Math.round(v / GRID) * GRID : v; }
+function snap(v) { return snapOn ? Math.round(v/GRID)*GRID : v; }
+function getPointerFromEvent(e) {
+  const rect = canvas.upperCanvasEl.getBoundingClientRect();
+  return { x: snap(e.clientX - rect.left), y: snap(e.clientY - rect.top) };
+}
 
 // ══════════════════════════════════════════
-// 畫牆 / 繪線
+// 點對點畫牆（修正1,2,3）
 // ══════════════════════════════════════════
-function onDown(o) {
-  if (mode !== 'wall') return;
-  isDown = true;
-  const p = canvas.getPointer(o.e);
-  const x = snap(p.x), y = snap(p.y);
-  drawLine = new fabric.Line([x, y, x, y], {
-    stroke: '#1a1a2e', strokeWidth: 6,
-    selectable: false, evented: false,
-    originX: 'center', originY: 'center'
-  });
-  suppressHistory = true;
-  canvas.add(drawLine);
-  suppressHistory = false;
+function onWallMouseMove(e) {
+  if (mode !== 'wall' && mode !== 'dash') return;
+  const p = getPointerFromEvent(e);
+  const cursor = document.getElementById('wallCursor');
+  cursor.style.left = p.x + 'px';
+  cursor.style.top = p.y + 'px';
+  cursor.style.display = 'block';
+
+  if (wallMode_started && wallPreviewLine) {
+    wallPreviewLine.set({ x2: p.x, y2: p.y });
+    canvas.renderAll();
+  }
 }
-function onMove(o) {
-  if (!isDown || mode !== 'wall' || !drawLine) return;
-  const p = canvas.getPointer(o.e);
-  drawLine.set({ x2: snap(p.x), y2: snap(p.y) });
+
+function onWallClick(e) {
+  if (mode !== 'wall' && mode !== 'dash') return;
+  // 如果點到了已有物件，不要觸發畫牆（修正3）
+  const target = canvas.findTarget(e);
+  if (target && !wallMode_started) return;
+
+  const p = getPointerFromEvent(e);
+
+  if (!wallMode_started) {
+    // 第一點：設起點
+    wallMode_started = true;
+    wallStartX = p.x; wallStartY = p.y;
+    const dot = document.getElementById('wallStartDot');
+    dot.style.left = p.x + 'px'; dot.style.top = p.y + 'px';
+    dot.style.display = 'block';
+    showHint('點擊第二個位置完成牆壁，Esc 取消');
+
+    const isDash = (mode === 'dash');
+    wallPreviewLine = new fabric.Line([p.x, p.y, p.x, p.y], {
+      stroke: isDash ? '#888' : '#1a1a2e',
+      strokeWidth: isDash ? 3 : 6,
+      strokeDashArray: isDash ? [8, 6] : [],
+      selectable: false, evented: false,
+      originX: 'center', originY: 'center',
+      opacity: 0.5
+    });
+    suppressHist = true;
+    canvas.add(wallPreviewLine);
+    suppressHist = false;
+  } else {
+    // 第二點：完成
+    const isDash = (mode === 'dash');
+    if (wallPreviewLine) canvas.remove(wallPreviewLine);
+    const line = new fabric.Line([wallStartX, wallStartY, p.x, p.y], {
+      stroke: isDash ? '#888' : '#1a1a2e',
+      strokeWidth: isDash ? 3 : 6,
+      strokeDashArray: isDash ? [8, 6] : [],
+      selectable: true, evented: true,
+      originX: 'center', originY: 'center',
+      opacity: 1
+    });
+    canvas.add(line);
+    canvas.setActiveObject(line);
+    resetWallState();
+    showHint('');
+    saveHistory();
+  }
+}
+
+function cancelWall() {
+  if (wallPreviewLine) canvas.remove(wallPreviewLine);
+  resetWallState();
+  showHint('');
   canvas.renderAll();
 }
-function onUp() {
-  if (mode !== 'wall' || !drawLine) return;
-  isDown = false;
-  drawLine.selectable = true;
-  drawLine.evented = true;
-  drawLine.setCoords();
-  saveHistory();
-  drawLine = null;
+
+function resetWallState() {
+  wallMode_started = false;
+  wallPreviewLine = null;
+  document.getElementById('wallStartDot').style.display = 'none';
+}
+
+function showHint(msg) {
+  const h = document.getElementById('hintBar');
+  if (msg) { h.textContent = msg; h.style.display = 'block'; }
+  else { h.style.display = 'none'; }
 }
 
 // ══════════════════════════════════════════
 // 模式切換
 // ══════════════════════════════════════════
 function setMode(m) {
+  cancelWall();
   mode = m;
   document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
   const btn = document.getElementById('btn-' + m);
   if (btn) btn.classList.add('active');
+  // 畫牆/虛線模式：停用 fabric 選取，讓點擊穿透到 upperCanvas
   canvas.selection = (m === 'select');
-  canvas.defaultCursor = (m === 'wall') ? 'crosshair' : 'default';
-  document.getElementById('modeLabel').textContent = m === 'wall' ? '畫牆' : m === 'select' ? '選取' : m;
+  canvas.defaultCursor = (m === 'select') ? 'default' : 'crosshair';
+  // 隱藏滑鼠點
+  if (m === 'select') {
+    document.getElementById('wallCursor').style.display = 'none';
+  }
+  const labels = { select:'選取', wall:'畫實線牆', dash:'畫虛線' };
+  document.getElementById('modeLabel').textContent = labels[m] || m;
+  if (m !== 'select') showHint('點擊第一個位置設定起點');
+  else showHint('');
   if (window.innerWidth <= 768) closeSidebar();
 }
 
 // ══════════════════════════════════════════
-// 物件工廠
+// 基礎物件
 // ══════════════════════════════════════════
-function cx() { return canvas.getWidth() / 2; }
-function cy() { return canvas.getHeight() / 2; }
-
+function cx() { return canvas.getWidth()/2; }
+function cy() { return canvas.getHeight()/2; }
 function addRoom() {
-  const r = new fabric.Rect({
-    left: snap(cx() - 75), top: snap(cy() - 75),
-    width: 150, height: 150,
-    fill: '#FAFAFA', stroke: '#1a1a2e', strokeWidth: 4,
-    rx: 0, ry: 0
-  });
+  const r = new fabric.Rect({ left:snap(cx()-75), top:snap(cy()-75), width:150, height:150, fill:'#FAFAFA', stroke:'#1a1a2e', strokeWidth:4 });
   canvas.add(r); canvas.setActiveObject(r);
-  if (window.innerWidth <= 768) closeSidebar();
+  if (window.innerWidth<=768) closeSidebar();
 }
-
 function addText() {
-  const t = new fabric.IText('房間名稱', {
-    left: snap(cx() - 40), top: snap(cy() - 12),
-    fontSize: 18, fill: '#333', fontFamily: 'Microsoft JhengHei'
-  });
+  const t = new fabric.IText('房間名稱', { left:snap(cx()-40), top:snap(cy()-12), fontSize:18, fill:'#333', fontFamily:'Microsoft JhengHei' });
   canvas.add(t); canvas.setActiveObject(t);
-  if (window.innerWidth <= 768) closeSidebar();
+  if (window.innerWidth<=768) closeSidebar();
 }
-
 function addDimension() {
   const grp = new fabric.Group([
-    new fabric.Line([0, 0, 100, 0], { stroke: '#e94560', strokeWidth: 2 }),
-    new fabric.Line([0, -6, 0, 6], { stroke: '#e94560', strokeWidth: 2 }),
-    new fabric.Line([100, -6, 100, 6], { stroke: '#e94560', strokeWidth: 2 }),
-    new fabric.IText('100cm', { left: 25, top: -22, fontSize: 12, fill: '#e94560', fontFamily: 'Microsoft JhengHei' })
-  ], { left: snap(cx() - 50), top: snap(cy()) });
+    new fabric.Line([0,0,100,0], { stroke:'#e94560', strokeWidth:2 }),
+    new fabric.Line([0,-6,0,6], { stroke:'#e94560', strokeWidth:2 }),
+    new fabric.Line([100,-6,100,6], { stroke:'#e94560', strokeWidth:2 }),
+    new fabric.IText('___cm', { left:28, top:-22, fontSize:12, fill:'#e94560', fontFamily:'Microsoft JhengHei' })
+  ], { left:snap(cx()-50), top:snap(cy()) });
   canvas.add(grp); canvas.setActiveObject(grp);
-  if (window.innerWidth <= 768) closeSidebar();
+  if (window.innerWidth<=768) closeSidebar();
 }
 
-// ── 各類物件 ──
+// ══════════════════════════════════════════
+// 物件工廠（修正4,5,6,7）
+// ══════════════════════════════════════════
 const OBJS = {
+
+  // 修正7：推門
   door: () => {
-    const arc = new fabric.Path('M 0 0 A 50 50 0 0 1 50 50', {
-      stroke: '#1a1a2e', strokeWidth: 2.5, fill: 'transparent'
-    });
-    const frame = new fabric.Line([0, 0, 0, 50], { stroke: '#1a1a2e', strokeWidth: 5 });
-    const base = new fabric.Line([-5, 50, 55, 50], { stroke: '#1a1a2e', strokeWidth: 3 });
-    return new fabric.Group([frame, arc, base], { left: snap(cx() - 25), top: snap(cy() - 25) });
+    const frame = new fabric.Line([0,0,0,60], { stroke:'#1a1a2e', strokeWidth:5 });
+    const base = new fabric.Line([-5,60,65,60], { stroke:'#1a1a2e', strokeWidth:3 });
+    const arc = new fabric.Path('M 0 0 A 60 60 0 0 1 60 60', { stroke:'#1a1a2e', strokeWidth:2, fill:'transparent', strokeDashArray:[5,3] });
+    return new fabric.Group([frame, base, arc], { left:snap(cx()-30), top:snap(cy()-60) });
   },
+
+  // 修正7：新增拉門（平移門）
+  'door-slide': () => {
+    const track = new fabric.Rect({ width:80, height:8, fill:'#ddd', stroke:'#888', strokeWidth:1 });
+    const door1 = new fabric.Rect({ left:0, top:8, width:36, height:50, fill:'#f0f0f0', stroke:'#1a1a2e', strokeWidth:2.5, rx:2 });
+    const door2 = new fabric.Rect({ left:38, top:8, width:36, height:50, fill:'#f0f0f0', stroke:'#1a1a2e', strokeWidth:2.5, rx:2, opacity:0.7 });
+    // 拉門箭頭
+    const arrow1 = new fabric.Text('←', { left:6, top:26, fontSize:14, fill:'#888', fontFamily:'Arial' });
+    const arrow2 = new fabric.Text('→', { left:54, top:26, fontSize:14, fill:'#888', fontFamily:'Arial' });
+    return new fabric.Group([track, door1, door2, arrow1, arrow2], { left:snap(cx()-40), top:snap(cy()-30) });
+  },
+
   window: () => {
-    const frame = new fabric.Rect({ width: 80, height: 12, fill: 'white', stroke: '#1a1a2e', strokeWidth: 2.5 });
-    const glass = new fabric.Rect({ left: 2, top: 2, width: 76, height: 8, fill: '#b3d9f5' });
-    const mid = new fabric.Line([40, 0, 40, 12], { stroke: '#1a1a2e', strokeWidth: 1.5 });
-    return new fabric.Group([frame, glass, mid], { left: snap(cx() - 40), top: snap(cy() - 6) });
+    const frame = new fabric.Rect({ width:80, height:12, fill:'white', stroke:'#1a1a2e', strokeWidth:2.5 });
+    const glass = new fabric.Rect({ left:2, top:2, width:76, height:8, fill:'#b3d9f5' });
+    const mid = new fabric.Line([40,0,40,12], { stroke:'#1a1a2e', strokeWidth:1.5 });
+    return new fabric.Group([frame, glass, mid], { left:snap(cx()-40), top:snap(cy()-6) });
   },
+
+  // 修正5：玻璃帷幕陽台
   balcony: () => {
-    const lines = [];
-    for (let i = 0; i <= 4; i++) {
-      lines.push(new fabric.Line([i * 20, 0, i * 20, 40], { stroke: '#888', strokeWidth: 1.5 }));
+    const items = [];
+    const W = 100, H = 50;
+    // 外框
+    const frame = new fabric.Rect({ width:W, height:H, fill:'rgba(176,220,245,0.15)', stroke:'#1a1a2e', strokeWidth:3 });
+    items.push(frame);
+    // 玻璃分隔線（垂直）
+    for (let i = 1; i <= 4; i++) {
+      items.push(new fabric.Line([i*(W/5), 0, i*(W/5), H], { stroke:'#4a9fc4', strokeWidth:1.5, opacity:0.8 }));
     }
-    const top = new fabric.Rect({ width: 80, height: 40, fill: '#f0f0f0', stroke: '#1a1a2e', strokeWidth: 3 });
-    return new fabric.Group([top, ...lines], { left: snap(cx() - 40), top: snap(cy() - 20) });
+    // 水平欄杆線
+    items.push(new fabric.Line([0, H/2, W, H/2], { stroke:'#4a9fc4', strokeWidth:1, strokeDashArray:[4,3], opacity:0.6 }));
+    // 上下橫樑（加粗）
+    items.push(new fabric.Line([0,0,W,0], { stroke:'#1a1a2e', strokeWidth:4 }));
+    items.push(new fabric.Line([0,H,W,H], { stroke:'#1a1a2e', strokeWidth:4 }));
+    return new fabric.Group(items, { left:snap(cx()-50), top:snap(cy()-25) });
   },
-  pillar: () => new fabric.Rect({
-    left: snap(cx() - 15), top: snap(cy() - 15),
-    width: 30, height: 30,
-    fill: '#888', stroke: '#333', strokeWidth: 2
-  }),
+
+  pillar: () => {
+    const body = new fabric.Rect({ width:30, height:30, fill:'#888', stroke:'#333', strokeWidth:2 });
+    const inner = new fabric.Rect({ left:5, top:5, width:20, height:20, fill:'#aaa' });
+    return new fabric.Group([body, inner], { left:snap(cx()-15), top:snap(cy()-15) });
+  },
+
+  // 修正6：專業指北針（N/S/E/W 四方向）
   compass: () => {
-    const circle = new fabric.Circle({ radius: 22, fill: 'white', stroke: '#1a1a2e', strokeWidth: 2, left: -22, top: -22 });
-    const arrow = new fabric.Triangle({ width: 12, height: 22, fill: '#e94560', left: -6, top: -22 });
-    const arrowS = new fabric.Triangle({ width: 12, height: 22, fill: '#888', left: -6, top: 0, angle: 180 });
-    const label = new fabric.Text('N', { left: -4, top: -30, fontSize: 10, fill: '#1a1a2e', fontWeight: 'bold', fontFamily: 'Microsoft JhengHei' });
-    return new fabric.Group([circle, arrow, arrowS, label], { left: snap(cx()), top: snap(cy()) });
+    const items = [];
+    // 外圓
+    items.push(new fabric.Circle({ radius:32, fill:'white', stroke:'#1a1a2e', strokeWidth:2, left:-32, top:-32 }));
+    // 北方箭頭（實心黑）
+    items.push(new fabric.Triangle({ width:14, height:28, fill:'#1a1a2e', stroke:'#1a1a2e', strokeWidth:1, left:-7, top:-30 }));
+    // 南方箭頭（空心）
+    items.push(new fabric.Triangle({ width:14, height:28, fill:'white', stroke:'#1a1a2e', strokeWidth:1.5, left:-7, top:2, angle:180 }));
+    // 東西箭頭（小）
+    items.push(new fabric.Triangle({ width:10, height:20, fill:'#1a1a2e', stroke:'#1a1a2e', strokeWidth:1, left:10, top:-5, angle:90 }));
+    items.push(new fabric.Triangle({ width:10, height:20, fill:'white', stroke:'#1a1a2e', strokeWidth:1.5, left:-20, top:-5, angle:270 }));
+    // 中心圓
+    items.push(new fabric.Circle({ radius:5, fill:'white', stroke:'#1a1a2e', strokeWidth:2, left:-5, top:-5 }));
+    // 文字 N/S/E/W
+    items.push(new fabric.Text('N', { left:-5, top:-46, fontSize:11, fill:'#1a1a2e', fontWeight:'bold', fontFamily:'Arial' }));
+    items.push(new fabric.Text('S', { left:-5, top:32, fontSize:11, fill:'#1a1a2e', fontFamily:'Arial' }));
+    items.push(new fabric.Text('E', { left:26, top:-6, fontSize:10, fill:'#1a1a2e', fontFamily:'Arial' }));
+    items.push(new fabric.Text('W', { left:-40, top:-6, fontSize:10, fill:'#1a1a2e', fontFamily:'Arial' }));
+    return new fabric.Group(items, { left:snap(cx()), top:snap(cy()) });
   },
 
   // 樓梯
   'stair-straight': () => {
     const steps = [];
-    for (let i = 0; i < 6; i++) {
-      steps.push(new fabric.Rect({ left: 0, top: i * 15, width: 60, height: 15, fill: i % 2 === 0 ? '#ddd' : '#bbb', stroke: '#888', strokeWidth: 1 }));
-    }
-    const label = new fabric.Text('梯', { left: 20, top: 38, fontSize: 12, fill: '#555', fontFamily: 'Microsoft JhengHei' });
-    return new fabric.Group([...steps, label], { left: snap(cx() - 30), top: snap(cy() - 45) });
+    for (let i = 0; i < 7; i++) steps.push(new fabric.Rect({ left:0, top:i*14, width:60, height:14, fill: i%2===0?'#ddd':'#c8c8c8', stroke:'#888', strokeWidth:1 }));
+    const arrow = new fabric.Text('↑', { left:22, top:2, fontSize:14, fill:'#666', fontFamily:'Arial' });
+    return new fabric.Group([...steps, arrow], { left:snap(cx()-30), top:snap(cy()-49) });
   },
   'stair-spiral': () => {
-    const outer = new fabric.Circle({ radius: 45, fill: '#e8e8e8', stroke: '#888', strokeWidth: 2, left: -45, top: -45 });
-    const inner = new fabric.Circle({ radius: 12, fill: '#bbb', stroke: '#666', strokeWidth: 2, left: -12, top: -12 });
-    const lines = [];
+    const items = [];
+    items.push(new fabric.Circle({ radius:45, fill:'#e8e8e8', stroke:'#888', strokeWidth:2, left:-45, top:-45 }));
+    items.push(new fabric.Circle({ radius:12, fill:'#bbb', stroke:'#666', strokeWidth:2, left:-12, top:-12 }));
     for (let i = 0; i < 8; i++) {
-      const angle = (i * 45) * Math.PI / 180;
-      lines.push(new fabric.Line([
-        12 * Math.cos(angle), 12 * Math.sin(angle),
-        45 * Math.cos(angle), 45 * Math.sin(angle)
-      ], { stroke: '#999', strokeWidth: 1.5 }));
+      const a = (i*45)*Math.PI/180;
+      items.push(new fabric.Line([12*Math.cos(a),12*Math.sin(a),45*Math.cos(a),45*Math.sin(a)], { stroke:'#999', strokeWidth:1.5 }));
     }
-    const label = new fabric.Text('旋梯', { left: -10, top: -8, fontSize: 10, fill: '#555', fontFamily: 'Microsoft JhengHei' });
-    return new fabric.Group([outer, ...lines, inner, label], { left: snap(cx()), top: snap(cy()) });
+    items.push(new fabric.Text('旋梯', { left:-11, top:-8, fontSize:10, fill:'#555', fontFamily:'Microsoft JhengHei' }));
+    return new fabric.Group(items, { left:snap(cx()), top:snap(cy()) });
   },
   'stair-l': () => {
-    const h = [];
-    for (let i = 0; i < 4; i++) h.push(new fabric.Rect({ left: 0, top: i * 15, width: 60, height: 15, fill: i % 2 === 0 ? '#ddd' : '#bbb', stroke: '#888', strokeWidth: 1 }));
-    const v = [];
-    for (let i = 0; i < 3; i++) v.push(new fabric.Rect({ left: 60 + i * 15, top: 45, width: 15, height: 60, fill: i % 2 === 0 ? '#ddd' : '#bbb', stroke: '#888', strokeWidth: 1 }));
-    return new fabric.Group([...h, ...v], { left: snap(cx() - 50), top: snap(cy() - 50) });
+    const items = [];
+    for (let i=0;i<4;i++) items.push(new fabric.Rect({ left:0, top:i*14, width:56, height:14, fill:i%2===0?'#ddd':'#c8c8c8', stroke:'#888', strokeWidth:1 }));
+    for (let i=0;i<3;i++) items.push(new fabric.Rect({ left:56+i*14, top:42, width:14, height:56, fill:i%2===0?'#ddd':'#c8c8c8', stroke:'#888', strokeWidth:1 }));
+    return new fabric.Group(items, { left:snap(cx()-50), top:snap(cy()-50) });
   },
 
   // 衛浴
   toilet: () => {
-    const tank = new fabric.Rect({ left: 0, top: 0, width: 40, height: 18, fill: '#f0f0f0', stroke: '#888', strokeWidth: 1.5, rx: 3 });
-    const bowl = new fabric.Ellipse({ rx: 18, ry: 22, left: 2, top: 16, fill: 'white', stroke: '#888', strokeWidth: 1.5 });
-    return new fabric.Group([tank, bowl], { left: snap(cx() - 20), top: snap(cy() - 28) });
+    const tank = new fabric.Rect({ left:5, top:0, width:36, height:18, fill:'#f0f0f0', stroke:'#888', strokeWidth:1.5, rx:3 });
+    const bowl = new fabric.Ellipse({ rx:20, ry:24, left:3, top:16, fill:'white', stroke:'#888', strokeWidth:1.5 });
+    const seat = new fabric.Ellipse({ rx:17, ry:20, left:6, top:20, fill:'#f8f8f8', stroke:'#aaa', strokeWidth:1 });
+    return new fabric.Group([tank, bowl, seat], { left:snap(cx()-23), top:snap(cy()-32) });
   },
   bathtub: () => {
-    const tub = new fabric.Rect({ width: 90, height: 50, fill: '#e8f4ff', stroke: '#888', strokeWidth: 2, rx: 12 });
-    const inner = new fabric.Ellipse({ rx: 38, ry: 18, left: 7, top: 7, fill: '#d0eaff', stroke: '#aaa', strokeWidth: 1 });
-    const drain = new fabric.Circle({ radius: 5, left: 75, top: 20, fill: '#aaa' });
-    return new fabric.Group([tub, inner, drain], { left: snap(cx() - 45), top: snap(cy() - 25) });
+    const tub = new fabric.Rect({ width:90, height:50, fill:'#e8f4ff', stroke:'#888', strokeWidth:2, rx:12 });
+    const inner = new fabric.Ellipse({ rx:38, ry:18, left:7, top:7, fill:'#d0eaff', stroke:'#aaa', strokeWidth:1 });
+    const drain = new fabric.Circle({ radius:4, left:76, top:21, fill:'#aaa' });
+    const tap = new fabric.Rect({ left:2, top:18, width:8, height:12, fill:'#ccc', rx:2 });
+    return new fabric.Group([tub, inner, drain, tap], { left:snap(cx()-45), top:snap(cy()-25) });
   },
   sink: () => {
-    const base = new fabric.Rect({ width: 50, height: 45, fill: '#f5f5f5', stroke: '#888', strokeWidth: 2, rx: 4 });
-    const bowl = new fabric.Ellipse({ rx: 18, ry: 15, left: 7, top: 10, fill: 'white', stroke: '#aaa', strokeWidth: 1.5 });
-    const faucet = new fabric.Rect({ width: 5, height: 12, left: 22, top: 0, fill: '#ccc' });
-    return new fabric.Group([base, bowl, faucet], { left: snap(cx() - 25), top: snap(cy() - 22) });
+    const base = new fabric.Rect({ width:50, height:45, fill:'#f5f5f5', stroke:'#888', strokeWidth:2, rx:4 });
+    const bowl = new fabric.Ellipse({ rx:18, ry:15, left:7, top:10, fill:'white', stroke:'#aaa', strokeWidth:1.5 });
+    const faucet = new fabric.Rect({ width:5, height:10, left:22, top:1, fill:'#ccc' });
+    return new fabric.Group([base, bowl, faucet], { left:snap(cx()-25), top:snap(cy()-22) });
   },
   shower: () => {
-    const base = new fabric.Rect({ width: 70, height: 70, fill: '#e8f4ff', stroke: '#888', strokeWidth: 2, rx: 2 });
-    const drain = new fabric.Circle({ radius: 8, left: 27, top: 27, fill: '#aaa', stroke: '#888', strokeWidth: 1 });
-    const head = new fabric.Circle({ radius: 10, left: 5, top: 5, fill: '#ddd', stroke: '#aaa', strokeWidth: 1 });
-    return new fabric.Group([base, drain, head], { left: snap(cx() - 35), top: snap(cy() - 35) });
+    const base = new fabric.Rect({ width:70, height:70, fill:'#e8f4ff', stroke:'#888', strokeWidth:2, rx:2 });
+    const drain = new fabric.Circle({ radius:7, left:28, top:28, fill:'#aaa', stroke:'#888', strokeWidth:1 });
+    const cross1 = new fabric.Line([28,31.5,42,31.5], { stroke:'#888', strokeWidth:1 });
+    const cross2 = new fabric.Line([35,24.5,35,38.5], { stroke:'#888', strokeWidth:1 });
+    return new fabric.Group([base, drain, cross1, cross2], { left:snap(cx()-35), top:snap(cy()-35) });
   },
 
   // 廚房
   stove: () => {
-    const base = new fabric.Rect({ width: 70, height: 60, fill: '#f0f0f0', stroke: '#888', strokeWidth: 2 });
-    const b1 = new fabric.Circle({ radius: 12, left: 8, top: 8, fill: '#ccc', stroke: '#888', strokeWidth: 1 });
-    const b2 = new fabric.Circle({ radius: 12, left: 46, top: 8, fill: '#ccc', stroke: '#888', strokeWidth: 1 });
-    const b3 = new fabric.Circle({ radius: 12, left: 8, top: 38, fill: '#ccc', stroke: '#888', strokeWidth: 1 });
-    const b4 = new fabric.Circle({ radius: 12, left: 46, top: 38, fill: '#ccc', stroke: '#888', strokeWidth: 1 });
-    return new fabric.Group([base, b1, b2, b3, b4], { left: snap(cx() - 35), top: snap(cy() - 30) });
+    const base = new fabric.Rect({ width:70, height:60, fill:'#f0f0f0', stroke:'#888', strokeWidth:2 });
+    const b1 = new fabric.Circle({ radius:12, left:8, top:8, fill:'#ccc', stroke:'#888', strokeWidth:1 });
+    const b2 = new fabric.Circle({ radius:12, left:46, top:8, fill:'#ccc', stroke:'#888', strokeWidth:1 });
+    const b3 = new fabric.Circle({ radius:12, left:8, top:38, fill:'#ccc', stroke:'#888', strokeWidth:1 });
+    const b4 = new fabric.Circle({ radius:12, left:46, top:38, fill:'#ccc', stroke:'#888', strokeWidth:1 });
+    const center1 = new fabric.Circle({ radius:3, left:17, top:17, fill:'#888' });
+    const center2 = new fabric.Circle({ radius:3, left:55, top:17, fill:'#888' });
+    const center3 = new fabric.Circle({ radius:3, left:17, top:47, fill:'#888' });
+    const center4 = new fabric.Circle({ radius:3, left:55, top:47, fill:'#888' });
+    return new fabric.Group([base,b1,b2,b3,b4,center1,center2,center3,center4], { left:snap(cx()-35), top:snap(cy()-30) });
   },
   counter: () => {
-    const base = new fabric.Rect({ width: 100, height: 55, fill: '#f5f5f5', stroke: '#888', strokeWidth: 2 });
-    const sink = new fabric.Rect({ left: 10, top: 10, width: 35, height: 30, fill: '#ddd', stroke: '#aaa', strokeWidth: 1.5, rx: 4 });
-    return new fabric.Group([base, sink], { left: snap(cx() - 50), top: snap(cy() - 27) });
+    const base = new fabric.Rect({ width:100, height:55, fill:'#f5f5f5', stroke:'#888', strokeWidth:2 });
+    const sink = new fabric.Rect({ left:8, top:8, width:38, height:32, fill:'#ddd', stroke:'#aaa', strokeWidth:1.5, rx:4 });
+    const faucet = new fabric.Rect({ left:20, top:4, width:5, height:8, fill:'#bbb' });
+    return new fabric.Group([base, sink, faucet], { left:snap(cx()-50), top:snap(cy()-27) });
   },
   fridge: () => {
-    const body = new fabric.Rect({ width: 55, height: 80, fill: '#f8f8f8', stroke: '#888', strokeWidth: 2, rx: 4 });
-    const line = new fabric.Line([0, 35, 55, 35], { stroke: '#aaa', strokeWidth: 1.5 });
-    const h1 = new fabric.Rect({ left: 40, top: 12, width: 8, height: 12, fill: '#ccc', rx: 2 });
-    const h2 = new fabric.Rect({ left: 40, top: 50, width: 8, height: 20, fill: '#ccc', rx: 2 });
-    return new fabric.Group([body, line, h1, h2], { left: snap(cx() - 27), top: snap(cy() - 40) });
+    const body = new fabric.Rect({ width:55, height:80, fill:'#f8f8f8', stroke:'#888', strokeWidth:2, rx:4 });
+    const divLine = new fabric.Line([0,35,55,35], { stroke:'#aaa', strokeWidth:1.5 });
+    const h1 = new fabric.Rect({ left:40, top:12, width:8, height:12, fill:'#ccc', rx:2 });
+    const h2 = new fabric.Rect({ left:40, top:50, width:8, height:20, fill:'#ccc', rx:2 });
+    return new fabric.Group([body, divLine, h1, h2], { left:snap(cx()-27), top:snap(cy()-40) });
   },
 
-  // 家具
+  // 修正4：家具（椅子角度修正）
   'bed-single': () => {
-    const frame = new fabric.Rect({ width: 60, height: 110, fill: '#F5DEB3', stroke: '#8B7355', strokeWidth: 2, rx: 4 });
-    const pillow = new fabric.Rect({ left: 8, top: 5, width: 44, height: 25, fill: 'white', stroke: '#ddd', strokeWidth: 1, rx: 6 });
-    const blanket = new fabric.Rect({ left: 4, top: 35, width: 52, height: 70, fill: '#E6E6FA', stroke: '#b0a0d0', strokeWidth: 1, rx: 3 });
-    return new fabric.Group([frame, blanket, pillow], { left: snap(cx() - 30), top: snap(cy() - 55) });
+    const frame = new fabric.Rect({ width:60, height:110, fill:'#F5DEB3', stroke:'#8B7355', strokeWidth:2, rx:3 });
+    const pillow = new fabric.Rect({ left:8, top:6, width:44, height:25, fill:'white', stroke:'#ddd', strokeWidth:1, rx:5 });
+    const blanket = new fabric.Rect({ left:4, top:36, width:52, height:70, fill:'#E6E6FA', stroke:'#b0a0d0', strokeWidth:1, rx:3 });
+    return new fabric.Group([frame, blanket, pillow], { left:snap(cx()-30), top:snap(cy()-55) });
   },
   'bed-double': () => {
-    const frame = new fabric.Rect({ width: 110, height: 120, fill: '#F5DEB3', stroke: '#8B7355', strokeWidth: 2, rx: 4 });
-    const p1 = new fabric.Rect({ left: 6, top: 5, width: 45, height: 28, fill: 'white', stroke: '#ddd', strokeWidth: 1, rx: 6 });
-    const p2 = new fabric.Rect({ left: 58, top: 5, width: 45, height: 28, fill: 'white', stroke: '#ddd', strokeWidth: 1, rx: 6 });
-    const blanket = new fabric.Rect({ left: 4, top: 38, width: 102, height: 78, fill: '#E6E6FA', stroke: '#b0a0d0', strokeWidth: 1, rx: 3 });
-    const mid = new fabric.Line([55, 38, 55, 116], { stroke: '#b0a0d0', strokeWidth: 1 });
-    return new fabric.Group([frame, blanket, p1, p2, mid], { left: snap(cx() - 55), top: snap(cy() - 60) });
+    const frame = new fabric.Rect({ width:110, height:120, fill:'#F5DEB3', stroke:'#8B7355', strokeWidth:2, rx:3 });
+    const p1 = new fabric.Rect({ left:6, top:5, width:45, height:28, fill:'white', stroke:'#ddd', strokeWidth:1, rx:5 });
+    const p2 = new fabric.Rect({ left:58, top:5, width:45, height:28, fill:'white', stroke:'#ddd', strokeWidth:1, rx:5 });
+    const blanket = new fabric.Rect({ left:4, top:38, width:102, height:78, fill:'#E6E6FA', stroke:'#b0a0d0', strokeWidth:1, rx:3 });
+    const mid = new fabric.Line([55,38,55,116], { stroke:'#b0a0d0', strokeWidth:1 });
+    return new fabric.Group([frame, blanket, p1, p2, mid], { left:snap(cx()-55), top:snap(cy()-60) });
   },
   sofa: () => {
-    const back = new fabric.Rect({ width: 100, height: 25, fill: '#B0C4DE', stroke: '#708090', strokeWidth: 1.5, rx: 6 });
-    const seat = new fabric.Rect({ top: 22, width: 100, height: 40, fill: '#778899', stroke: '#708090', strokeWidth: 1.5, rx: 4 });
-    const al = new fabric.Rect({ left: -10, top: 10, width: 12, height: 50, fill: '#B0C4DE', stroke: '#708090', strokeWidth: 1.5, rx: 4 });
-    const ar = new fabric.Rect({ left: 98, top: 10, width: 12, height: 50, fill: '#B0C4DE', stroke: '#708090', strokeWidth: 1.5, rx: 4 });
-    return new fabric.Group([back, seat, al, ar], { left: snap(cx() - 60), top: snap(cy() - 30) });
+    const back = new fabric.Rect({ width:100, height:25, fill:'#B0C4DE', stroke:'#708090', strokeWidth:1.5, rx:6 });
+    const seat = new fabric.Rect({ top:22, width:100, height:40, fill:'#778899', stroke:'#708090', strokeWidth:1.5, rx:3 });
+    const al = new fabric.Rect({ left:-10, top:10, width:12, height:50, fill:'#B0C4DE', stroke:'#708090', strokeWidth:1.5, rx:3 });
+    const ar = new fabric.Rect({ left:98, top:10, width:12, height:50, fill:'#B0C4DE', stroke:'#708090', strokeWidth:1.5, rx:3 });
+    return new fabric.Group([back, seat, al, ar], { left:snap(cx()-60), top:snap(cy()-30) });
   },
+  // 修正4：餐桌椅子角度對齊
   table: () => {
-    const top = new fabric.Ellipse({ rx: 55, ry: 40, fill: '#DEB887', stroke: '#8B7355', strokeWidth: 2 });
-    const c1 = new fabric.Circle({ radius: 15, left: -50, top: -35, fill: '#f5f5f5', stroke: '#ccc', strokeWidth: 1 });
-    const c2 = new fabric.Circle({ radius: 15, left: 35, top: -35, fill: '#f5f5f5', stroke: '#ccc', strokeWidth: 1 });
-    const c3 = new fabric.Circle({ radius: 15, left: -50, top: 20, fill: '#f5f5f5', stroke: '#ccc', strokeWidth: 1 });
-    const c4 = new fabric.Circle({ radius: 15, left: 35, top: 20, fill: '#f5f5f5', stroke: '#ccc', strokeWidth: 1 });
-    return new fabric.Group([top, c1, c2, c3, c4], { left: snap(cx() - 55), top: snap(cy() - 40) });
+    const top = new fabric.Ellipse({ rx:50, ry:35, fill:'#DEB887', stroke:'#8B7355', strokeWidth:2, left:-50, top:-35 });
+    // 椅子：統一朝上，用 Rect 代表椅背+椅座，角度正確
+    function makeChair(lx, ly, angle) {
+      const back = new fabric.Rect({ left:-14, top:-8, width:28, height:8, fill:'#f0f0f0', stroke:'#aaa', strokeWidth:1, rx:3 });
+      const seat = new fabric.Rect({ left:-12, top:0, width:24, height:18, fill:'#e0e0e0', stroke:'#aaa', strokeWidth:1, rx:2 });
+      return new fabric.Group([back, seat], { left:lx, top:ly, angle:angle });
+    }
+    const c1 = makeChair(-14, -62, 0);   // 上
+    const c2 = makeChair(-14, 44, 180);  // 下
+    const c3 = makeChair(-72, -10, 90);  // 左
+    const c4 = makeChair(50, -10, 270);  // 右
+    return new fabric.Group([top, c1, c2, c3, c4], { left:snap(cx()-50), top:snap(cy()-35) });
   },
   desk: () => {
-    const top = new fabric.Rect({ width: 100, height: 55, fill: '#DEB887', stroke: '#8B7355', strokeWidth: 2, rx: 3 });
-    const drawer = new fabric.Rect({ left: 60, top: 8, width: 32, height: 38, fill: '#C9A87A', stroke: '#8B7355', strokeWidth: 1, rx: 2 });
-    const handle = new fabric.Rect({ left: 70, top: 24, width: 12, height: 6, fill: '#aaa', rx: 2 });
-    return new fabric.Group([top, drawer, handle], { left: snap(cx() - 50), top: snap(cy() - 27) });
+    const top = new fabric.Rect({ width:100, height:55, fill:'#DEB887', stroke:'#8B7355', strokeWidth:2, rx:3 });
+    const drawer = new fabric.Rect({ left:60, top:8, width:32, height:38, fill:'#C9A87A', stroke:'#8B7355', strokeWidth:1, rx:2 });
+    const handle = new fabric.Rect({ left:70, top:24, width:12, height:6, fill:'#aaa', rx:2 });
+    return new fabric.Group([top, drawer, handle], { left:snap(cx()-50), top:snap(cy()-27) });
   },
   wardrobe: () => {
-    const body = new fabric.Rect({ width: 100, height: 55, fill: '#f0ebe0', stroke: '#8B7355', strokeWidth: 2 });
-    const div = new fabric.Line([50, 0, 50, 55], { stroke: '#8B7355', strokeWidth: 1.5 });
-    const h1 = new fabric.Rect({ left: 15, top: 22, width: 20, height: 8, fill: '#ccc', rx: 3 });
-    const h2 = new fabric.Rect({ left: 65, top: 22, width: 20, height: 8, fill: '#ccc', rx: 3 });
-    return new fabric.Group([body, div, h1, h2], { left: snap(cx() - 50), top: snap(cy() - 27) });
+    const body = new fabric.Rect({ width:100, height:55, fill:'#f0ebe0', stroke:'#8B7355', strokeWidth:2 });
+    const div = new fabric.Line([50,0,50,55], { stroke:'#8B7355', strokeWidth:1.5 });
+    const h1 = new fabric.Rect({ left:13, top:22, width:22, height:8, fill:'#ccc', rx:3 });
+    const h2 = new fabric.Rect({ left:63, top:22, width:22, height:8, fill:'#ccc', rx:3 });
+    return new fabric.Group([body, div, h1, h2], { left:snap(cx()-50), top:snap(cy()-27) });
   },
 };
 
 function addObj(type) {
   const fn = OBJS[type];
   if (!fn) return;
-  const obj = fn();
-  canvas.add(obj);
-  canvas.setActiveObject(obj);
-  if (window.innerWidth <= 768) closeSidebar();
+  canvas.add(fn());
+  canvas.setActiveObject(canvas.item(canvas.size()-1));
+  if (window.innerWidth<=768) closeSidebar();
 }
 
 // ══════════════════════════════════════════
@@ -769,13 +647,9 @@ function applyColor(el) {
   const color = el.dataset.color;
   const obj = canvas.getActiveObject();
   if (!obj) return;
-  if (obj.type === 'group') {
-    obj.item(0).set('fill', color);
-  } else {
-    obj.set('fill', color);
-  }
-  canvas.renderAll();
-  saveHistory();
+  if (obj.type==='group') obj.item(0).set('fill', color);
+  else obj.set('fill', color);
+  canvas.renderAll(); saveHistory();
 }
 
 // ══════════════════════════════════════════
@@ -785,70 +659,60 @@ function showProp() {
   const obj = canvas.getActiveObject();
   if (!obj) return;
   document.getElementById('propPanel').style.display = 'block';
-  document.getElementById('propAngle').value = Math.round(obj.angle || 0);
-  document.getElementById('angleVal').textContent = Math.round(obj.angle || 0) + '°';
-  if (obj.type === 'i-text') document.getElementById('propLabel').value = obj.text;
-  else document.getElementById('propLabel').value = obj.name || '';
-  const stroke = obj.stroke || '#000000';
-  if (stroke !== 'transparent') document.getElementById('propStroke').value = stroke;
+  const angle = Math.round(obj.angle||0);
+  document.getElementById('propAngle').value = angle;
+  document.getElementById('angleVal').textContent = angle + '°';
+  if (obj.type==='i-text') document.getElementById('propLabel').value = obj.text;
+  else document.getElementById('propLabel').value = obj.name||'';
+  const isDash = obj.strokeDashArray && obj.strokeDashArray.length > 0;
+  document.getElementById('lineSolid').className = 'line-btn' + (isDash?'':' active');
+  document.getElementById('lineDash').className = 'line-btn' + (isDash?' active':'');
 }
-function closeProp() { document.getElementById('propPanel').style.display = 'none'; }
+function closeProp() { document.getElementById('propPanel').style.display='none'; }
 function updateLabel() {
-  const obj = canvas.getActiveObject();
-  if (!obj) return;
-  const val = document.getElementById('propLabel').value;
-  if (obj.type === 'i-text') { obj.set('text', val); canvas.renderAll(); }
-  else { obj.name = val; }
+  const obj = canvas.getActiveObject(); if (!obj) return;
+  if (obj.type==='i-text') { obj.set('text', document.getElementById('propLabel').value); canvas.renderAll(); }
 }
 function updateAngle() {
-  const obj = canvas.getActiveObject();
-  if (!obj) return;
+  const obj = canvas.getActiveObject(); if (!obj) return;
   const v = parseInt(document.getElementById('propAngle').value);
-  document.getElementById('angleVal').textContent = v + '°';
-  obj.set('angle', v);
-  canvas.renderAll();
+  document.getElementById('angleVal').textContent = v+'°';
+  obj.set('angle', v); canvas.renderAll();
 }
 function updateStroke() {
-  const obj = canvas.getActiveObject();
-  if (!obj) return;
+  const obj = canvas.getActiveObject(); if (!obj) return;
   obj.set('stroke', document.getElementById('propStroke').value);
-  canvas.renderAll();
-  saveHistory();
+  canvas.renderAll(); saveHistory();
+}
+function setLineStyle(style) {
+  const obj = canvas.getActiveObject(); if (!obj) return;
+  obj.set('strokeDashArray', style==='dash' ? [8,6] : []);
+  canvas.renderAll(); saveHistory();
+  document.getElementById('lineSolid').className = 'line-btn' + (style==='solid'?' active':'');
+  document.getElementById('lineDash').className = 'line-btn' + (style==='dash'?' active':'');
 }
 
 // ══════════════════════════════════════════
-// 刪除
+// 刪除 / 清空
 // ══════════════════════════════════════════
 function deleteSelected() {
-  const obj = canvas.getActiveObject();
-  if (obj) { canvas.remove(obj); saveHistory(); }
+  const obj = canvas.getActiveObject(); if (!obj) return;
+  canvas.remove(obj); saveHistory();
+  document.getElementById('propPanel').style.display='none';
 }
-
-// ══════════════════════════════════════════
-// 清空
-// ══════════════════════════════════════════
 function clearAll() {
   if (!confirm('確定清空畫布？')) return;
-  canvas.clear();
-  canvas.backgroundColor = 'rgba(0,0,0,0)';
-  canvas.renderAll();
-  saveHistory();
+  canvas.clear(); canvas.backgroundColor='rgba(0,0,0,0)'; canvas.renderAll(); saveHistory();
 }
 
 // ══════════════════════════════════════════
 // Snap & Grid
 // ══════════════════════════════════════════
-function toggleSnap() {
-  snapOn = !snapOn;
-  document.getElementById('snapToggle').className = 'toggle' + (snapOn ? ' on' : '');
-}
+function toggleSnap() { snapOn=!snapOn; document.getElementById('snapToggle').className='toggle'+(snapOn?' on':''); }
 function toggleGrid() {
-  gridOn = !gridOn;
-  document.getElementById('gridToggle').className = 'toggle' + (gridOn ? ' on' : '');
-  const wrap = document.getElementById('canvasWrap');
-  wrap.style.backgroundImage = gridOn
-    ? 'linear-gradient(rgba(100,100,200,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(100,100,200,0.08) 1px, transparent 1px)'
-    : 'none';
+  gridOn=!gridOn; document.getElementById('gridToggle').className='toggle'+(gridOn?' on':'');
+  document.getElementById('canvasWrap').style.backgroundImage = gridOn
+    ? 'linear-gradient(rgba(100,100,200,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(100,100,200,0.08) 1px, transparent 1px)' : 'none';
 }
 
 // ══════════════════════════════════════════
@@ -856,60 +720,33 @@ function toggleGrid() {
 // ══════════════════════════════════════════
 function saveHistory() {
   const json = JSON.stringify(canvas.toJSON());
-  history = history.slice(0, historyIndex + 1);
-  history.push(json);
-  historyIndex = history.length - 1;
-  updateStatus();
+  history = history.slice(0, histIdx+1);
+  history.push(json); histIdx = history.length-1; updateStatus();
 }
-function undo() {
-  if (historyIndex <= 0) return;
-  historyIndex--;
-  loadState(history[historyIndex]);
-}
-function redo() {
-  if (historyIndex >= history.length - 1) return;
-  historyIndex++;
-  loadState(history[historyIndex]);
-}
+function undo() { if (histIdx<=0) return; histIdx--; loadState(history[histIdx]); }
+function redo() { if (histIdx>=history.length-1) return; histIdx++; loadState(history[histIdx]); }
 function loadState(json) {
-  suppressHistory = true;
-  canvas.loadFromJSON(json, () => {
-    canvas.renderAll();
-    suppressHistory = false;
-    updateStatus();
-  });
+  suppressHist = true;
+  canvas.loadFromJSON(json, () => { canvas.renderAll(); suppressHist=false; updateStatus(); });
 }
 
 // ══════════════════════════════════════════
-// 狀態列
+// 狀態列 / 匯出
 // ══════════════════════════════════════════
-function updateStatus() {
-  document.getElementById('objCount').textContent = canvas.getObjects().length;
-}
-
-// ══════════════════════════════════════════
-// 匯出
-// ══════════════════════════════════════════
+function updateStatus() { document.getElementById('objCount').textContent = canvas.getObjects().length; }
 function exportImg() {
-  canvas.discardActiveObject();
-  canvas.renderAll();
+  canvas.discardActiveObject(); canvas.renderAll();
   const link = document.createElement('a');
   link.download = 'floor_plan_' + Date.now() + '.png';
-  link.href = canvas.toDataURL({ format: 'png', multiplier: 2 });
+  link.href = canvas.toDataURL({ format:'png', multiplier:2 });
   link.click();
 }
 
 // ══════════════════════════════════════════
-// Mobile sidebar
+// Mobile
 // ══════════════════════════════════════════
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('overlay').classList.toggle('open');
-}
-function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('overlay').classList.remove('open');
-}
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('open'); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
 </script>
 </body>
 </html>
