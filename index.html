@@ -591,24 +591,13 @@ const OBJS = {
   },
 
   'balcony-semi': () => {
-    // 半圓陽台：平底靠牆在上，弧形向下突出
-    // 關鍵：座標全部以 Group 中心 (0,0) 為基準，避免 Fabric 重新置中導致位移
-    const R = 55, H = R / 2; // H = 27.5，讓 bbox 從 -H 到 H，中心剛好在 0
-    const items = [];
-    // 弧形：從 (-R, -H) 到 (R, -H)，sweep=1 代表向下弧出
-    items.push(new fabric.Path(`M ${-R} ${-H} A ${R} ${R} 0 0 1 ${R} ${-H}`, {
-      fill: 'rgba(176,220,245,0.2)', stroke: '#1a1a2e', strokeWidth: 3
-    }));
-    // 平底橫線（靠牆，在 y=-H 即頂部）
-    items.push(new fabric.Line([-R, -H, R, -H], { stroke: '#1a1a2e', strokeWidth: 4 }));
-    // 放射分隔線：從平底中心 (0,-H) 向下延伸進弧形內
-    for (let i = 1; i <= 4; i++) {
-      const angle = (Math.PI / 5) * i;
-      const x2 = R * Math.cos(Math.PI - angle);
-      const y2 = R * Math.sin(angle) - H; // 終點在弧形內
-      items.push(new fabric.Line([0, -H, x2, y2], { stroke: '#4a9fc4', strokeWidth: 1.5, opacity: 0.7 }));
-    }
-    return new fabric.Group(items, { left: snap(cx() - R), top: snap(cy() - H) });
+    // 半圓陽台：平底靠牆在上，弧形向下突出，簡潔版（無放射線）
+    return new fabric.Group([
+      new fabric.Path('M -55 0 A 55 55 0 0 1 55 0', {
+        fill: 'rgba(176,220,245,0.25)', stroke: '#1a1a2e', strokeWidth: 3
+      }),
+      new fabric.Line([-55, 0, 55, 0], { stroke: '#1a1a2e', strokeWidth: 5 })
+    ], { left: snap(cx() - 55), top: snap(cy() - 55) });
   },
 
   pillar: () => new fabric.Group([
