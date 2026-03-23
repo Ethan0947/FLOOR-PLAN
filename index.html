@@ -12,28 +12,28 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden;touch-action:none;}
 .sidebar{width:270px;min-width:270px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;z-index:1500;transition:transform 0.3s ease;}
-.sidebar-header{padding:14px 16px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-.logo{font-size:1.2rem;font-weight:900;color:var(--accent);letter-spacing:-1px;}
+.sidebar-header{padding:12px 14px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.logo{font-size:1.1rem;font-weight:900;color:var(--accent);letter-spacing:-1px;}
 .version{font-size:0.7rem;background:var(--accent);color:white;padding:2px 8px;border-radius:20px;font-weight:bold;}
-.section{padding:10px 12px;border-bottom:1px solid var(--border);}
-.section-title{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;font-weight:700;}
+.section{padding:9px 12px;border-bottom:1px solid var(--border);}
+.section-title{font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px;font-weight:700;}
 .tool-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
-.tool-btn{background:var(--btn);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);cursor:pointer;padding:7px 4px;text-align:center;font-size:0.7rem;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all 0.15s;line-height:1.2;}
+.tool-btn{background:var(--btn);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);cursor:pointer;padding:7px 3px;text-align:center;font-size:0.68rem;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all 0.15s;line-height:1.2;}
 .tool-btn:hover{background:var(--btn-hover);border-color:var(--accent);}
 .tool-btn.active{background:var(--accent);border-color:var(--accent);color:white;}
-.tool-btn .icon{font-size:1.1rem;}
-.color-row{display:flex;gap:6px;flex-wrap:wrap;}
-.swatch{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform 0.15s,border-color 0.15s;}
+.tool-btn .icon{font-size:1rem;}
+.color-row{display:flex;gap:5px;flex-wrap:wrap;}
+.swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform 0.15s,border-color 0.15s;}
 .swatch:hover{transform:scale(1.15);border-color:white;}
 .swatch.active{border-color:var(--accent2);transform:scale(1.15);}
-.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;}
-.toggle-label{font-size:0.78rem;}
-.toggle{position:relative;width:34px;height:18px;background:var(--border);border-radius:20px;cursor:pointer;transition:background 0.2s;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:3px 0;}
+.toggle-label{font-size:0.76rem;}
+.toggle{position:relative;width:32px;height:17px;background:var(--border);border-radius:20px;cursor:pointer;transition:background 0.2s;}
 .toggle.on{background:var(--green);}
-.toggle::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;background:white;border-radius:50%;transition:left 0.2s;}
-.toggle.on::after{left:18px;}
-.action-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:12px;}
-.act-btn{padding:9px;border:none;border-radius:var(--radius);font-size:0.78rem;font-weight:700;cursor:pointer;transition:opacity 0.15s;display:flex;align-items:center;justify-content:center;gap:4px;}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;background:white;border-radius:50%;transition:left 0.2s;}
+.toggle.on::after{left:17px;}
+.action-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 12px;}
+.act-btn{padding:8px;border:none;border-radius:var(--radius);font-size:0.76rem;font-weight:700;cursor:pointer;transition:opacity 0.15s;display:flex;align-items:center;justify-content:center;gap:4px;}
 .act-btn:hover{opacity:0.85;}
 .act-btn.undo{background:var(--btn);color:var(--text);border:1px solid var(--border);}
 .act-btn.redo{background:var(--btn);color:var(--text);border:1px solid var(--border);}
@@ -41,6 +41,7 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
 .act-btn.export{background:var(--green);color:white;}
 .canvas-wrap{flex:1;position:relative;background:#f5f0e8;background-image:linear-gradient(rgba(100,100,200,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(100,100,200,0.08) 1px,transparent 1px);background-size:20px 20px;overflow:hidden;}
 #mainCanvas{display:block;}
+#polyPreviewCanvas{position:absolute;top:0;left:0;pointer-events:none;z-index:50;}
 .dot-marker{position:absolute;width:10px;height:10px;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:101;display:none;}
 .dot-red{background:var(--accent);box-shadow:0 0 0 3px rgba(233,69,96,0.3);}
 .dot-yellow{background:var(--accent2);box-shadow:0 0 0 4px rgba(245,166,35,0.3);animation:pulse 1s infinite;}
@@ -49,18 +50,43 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
 .statusbar{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(22,33,62,0.92);border:1px solid var(--border);border-radius:20px;padding:5px 14px;font-size:0.72rem;color:var(--muted);backdrop-filter:blur(8px);pointer-events:none;white-space:nowrap;}
 .statusbar span{color:var(--accent2);font-weight:bold;}
 .hint-bar{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(233,69,96,0.92);border-radius:20px;padding:5px 16px;font-size:0.75rem;color:white;pointer-events:none;display:none;white-space:nowrap;max-width:90%;text-align:center;}
-.prop-panel{position:absolute;top:16px;right:16px;background:var(--sidebar);border:1px solid var(--border);border-radius:var(--radius);padding:14px;width:200px;display:none;z-index:1600;box-shadow:0 8px 30px rgba(0,0,0,0.4);}
-.prop-panel h4{font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;justify-content:space-between;}
+
+/* ── 說明按鈕 ── */
+.help-btn{position:absolute;top:14px;right:16px;z-index:1200;width:36px;height:36px;border-radius:50%;background:var(--panel);border:1px solid var(--border);color:var(--accent2);font-size:1.1rem;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);transition:background 0.2s;}
+.help-btn:hover{background:var(--btn-hover);}
+
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:3000;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--sidebar);border:1px solid var(--border);border-radius:14px;width:90%;max-width:520px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.modal-header{padding:16px 20px;background:var(--panel);border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
+.modal-header h2{font-size:1rem;color:var(--accent2);}
+.modal-close{cursor:pointer;font-size:1.3rem;color:var(--muted);background:none;border:none;color:var(--text);}
+.modal-close:hover{color:var(--accent);}
+.modal-body{padding:18px 20px;}
+.help-section{margin-bottom:18px;}
+.help-section h3{font-size:0.82rem;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+.help-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;}
+.help-icon{font-size:1.1rem;min-width:24px;text-align:center;margin-top:2px;}
+.help-text{font-size:0.8rem;color:var(--muted);line-height:1.5;}
+.help-text strong{color:var(--text);}
+.kbd{display:inline-block;background:var(--btn);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:0.72rem;color:var(--accent2);font-family:monospace;}
+
+/* ── Prop Panel ── */
+.prop-panel{position:absolute;top:60px;right:16px;background:var(--sidebar);border:1px solid var(--border);border-radius:var(--radius);padding:14px;width:200px;display:none;z-index:1100;box-shadow:0 8px 30px rgba(0,0,0,0.4);}
+.prop-panel h4{font-size:0.76rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;justify-content:space-between;}
 .prop-panel h4 .close-btn{cursor:pointer;color:var(--accent);font-size:1rem;}
 .prop-row{margin-bottom:9px;}
-.prop-row label{font-size:0.72rem;color:var(--muted);display:block;margin-bottom:3px;}
+.prop-row label{font-size:0.7rem;color:var(--muted);display:block;margin-bottom:3px;}
 .prop-row input[type=text]{width:100%;padding:6px 8px;background:var(--btn);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.78rem;}
 .prop-row input[type=range]{width:100%;accent-color:var(--accent);}
-.prop-row .angle-val{font-size:0.72rem;color:var(--accent2);text-align:right;}
+.prop-row .angle-val{font-size:0.7rem;color:var(--accent2);text-align:right;}
 .line-style-row{display:flex;gap:6px;}
-.line-btn{flex:1;padding:6px;background:var(--btn);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;font-size:0.72rem;text-align:center;}
+.line-btn{flex:1;padding:5px;background:var(--btn);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;font-size:0.7rem;text-align:center;}
 .line-btn.active{background:var(--accent);border-color:var(--accent);}
-.menu-toggle{display:none;position:fixed;top:12px;left:12px;z-index:2000;background:var(--accent);color:white;border:none;border-radius:50%;width:44px;height:44px;font-size:1.1rem;cursor:pointer;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(233,69,96,0.4);}
+
+/* ── Mobile ── */
+.menu-toggle{display:none;position:fixed;top:12px;left:12px;z-index:2000;background:var(--accent);color:white;border:none;border-radius:50%;width:42px;height:42px;font-size:1.1rem;cursor:pointer;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(233,69,96,0.4);}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1400;}
 @media(max-width:768px){
   .menu-toggle{display:flex;}
@@ -68,18 +94,18 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
   .sidebar.open{transform:translateX(0);}
   .overlay.open{display:block;}
   .prop-panel{top:auto;bottom:16px;right:8px;left:8px;width:auto;}
+  .help-btn{top:12px;right:10px;}
 }
-/* 多邊形填色預覽 */
-#polyPreviewCanvas{position:absolute;top:0;left:0;pointer-events:none;z-index:50;}
 </style>
 </head>
 <body>
 <button class="menu-toggle" onclick="toggleSidebar()">🛠️</button>
 <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
+<!-- ── SIDEBAR ── -->
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <div><div class="logo">格局神器</div><div style="font-size:0.65rem;color:var(--muted);margin-top:1px;">Ethan Floor Plan Tool</div></div>
+    <div><div class="logo">格局神器</div><div style="font-size:0.63rem;color:var(--muted);margin-top:1px;">Ethan Floor Plan Tool</div></div>
     <span class="version">V3</span>
   </div>
 
@@ -105,7 +131,6 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
       <button class="tool-btn" onclick="addObj('window')"><span class="icon">🪟</span>窗</button>
       <button class="tool-btn" onclick="addObj('balcony')"><span class="icon">🏗️</span>陽台</button>
       <button class="tool-btn" onclick="addObj('balcony-semi')"><span class="icon">🌗</span>半圓台</button>
-      <button class="tool-btn" onclick="addObj('balcony-quarter')"><span class="icon">◔</span>弧形台</button>
       <button class="tool-btn" onclick="addObj('pillar')"><span class="icon">⬛</span>柱子</button>
       <button class="tool-btn" onclick="addObj('compass')"><span class="icon">🧭</span>指北</button>
     </div>
@@ -153,8 +178,8 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
 
   <div class="section">
     <div class="section-title">🎨 填色</div>
-    <div style="font-size:0.68rem;color:var(--muted);margin-bottom:6px;">選取物件後點色球，或用🪣框填色</div>
-    <div class="color-row" id="colorRow">
+    <div style="font-size:0.65rem;color:var(--muted);margin-bottom:5px;">選取物件後點色球，或切🪣框填色</div>
+    <div class="color-row">
       <div class="swatch active" style="background:#FAFAFA" data-color="#FAFAFA" onclick="pickColor(this)"></div>
       <div class="swatch" style="background:#E6E6FA" data-color="#E6E6FA" onclick="pickColor(this)"></div>
       <div class="swatch" style="background:#F5DEB3" data-color="#F5DEB3" onclick="pickColor(this)"></div>
@@ -170,14 +195,8 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
 
   <div class="section">
     <div class="section-title">⚙️ 設定</div>
-    <div class="toggle-row">
-      <span class="toggle-label">格線吸附</span>
-      <div class="toggle on" id="snapToggle" onclick="toggleSnap()"></div>
-    </div>
-    <div class="toggle-row" style="margin-top:6px">
-      <span class="toggle-label">顯示格線</span>
-      <div class="toggle on" id="gridToggle" onclick="toggleGrid()"></div>
-    </div>
+    <div class="toggle-row"><span class="toggle-label">格線吸附</span><div class="toggle on" id="snapToggle" onclick="toggleSnap()"></div></div>
+    <div class="toggle-row" style="margin-top:5px"><span class="toggle-label">顯示格線</span><div class="toggle on" id="gridToggle" onclick="toggleGrid()"></div></div>
   </div>
 
   <div class="action-row">
@@ -186,26 +205,27 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
     <button class="act-btn clear" onclick="clearAll()">🗑️ 清空</button>
     <button class="act-btn export" onclick="exportImg()">💾 存圖</button>
   </div>
-  <div style="padding:0 12px 12px;font-size:0.65rem;color:var(--muted);text-align:center;">Ctrl+Z 復原 · Del 刪除 · Esc 取消</div>
+  <div style="padding:0 12px 10px;font-size:0.63rem;color:var(--muted);text-align:center;">Ctrl+Z 復原 · Del 刪除 · Esc 取消</div>
 </div>
 
+<!-- ── CANVAS AREA ── -->
 <div class="canvas-wrap" id="canvasWrap">
   <canvas id="mainCanvas"></canvas>
   <canvas id="polyPreviewCanvas"></canvas>
-  <!-- 點位指示器 -->
   <div class="dot-marker dot-yellow" id="dotStart"></div>
   <div class="dot-marker dot-red" id="dotCursor"></div>
   <div class="dot-marker dot-green" id="dotMid"></div>
   <div class="hint-bar" id="hintBar"></div>
   <div class="statusbar">模式：<span id="modeLabel">選取</span> ｜ 物件：<span id="objCount">0</span></div>
+
+  <!-- 說明按鈕 -->
+  <button class="help-btn" onclick="openHelp()" title="使用說明">？</button>
 </div>
 
+<!-- ── 屬性面板 ── -->
 <div class="prop-panel" id="propPanel">
   <h4>物件屬性 <span class="close-btn" onclick="closeProp()">✕</span></h4>
-  <div class="prop-row">
-    <label>文字標籤</label>
-    <input type="text" id="propLabel" placeholder="輸入標籤..." oninput="updateLabel()">
-  </div>
+  <div class="prop-row"><label>文字標籤</label><input type="text" id="propLabel" placeholder="輸入標籤..." oninput="updateLabel()"></div>
   <div class="prop-row">
     <label>旋轉角度 <span class="angle-val" id="angleVal">0°</span></label>
     <input type="range" id="propAngle" min="0" max="360" value="0" oninput="updateAngle()">
@@ -217,9 +237,54 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
       <button class="line-btn" id="lineDash" onclick="setLineStyle('dash')">虛線</button>
     </div>
   </div>
-  <div class="prop-row">
-    <label>線條顏色</label>
-    <input type="color" id="propStroke" value="#1a1a2e" oninput="updateStroke()" style="width:100%;height:26px;border:none;cursor:pointer;background:none;">
+  <div class="prop-row"><label>線條顏色</label><input type="color" id="propStroke" value="#1a1a2e" oninput="updateStroke()" style="width:100%;height:24px;border:none;cursor:pointer;background:none;"></div>
+</div>
+
+<!-- ── 使用說明 Modal ── -->
+<div class="modal-overlay" id="helpModal" onclick="closeHelp(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>📖 格局神器使用說明</h2>
+      <button class="modal-close" onclick="closeHelp()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="help-section">
+        <h3>✏️ 繪圖模式</h3>
+        <div class="help-row"><span class="help-icon">✋</span><div class="help-text"><strong>選取</strong>：點擊物件選取，可拖移、縮放、旋轉。8個控制點可自由縮放。</div></div>
+        <div class="help-row"><span class="help-icon">➖</span><div class="help-text"><strong>實線牆</strong>：點第一個位置設起點（橘點出現），再點第二個位置完成一條牆。</div></div>
+        <div class="help-row"><span class="help-icon">┄</span><div class="help-text"><strong>虛線</strong>：同畫牆操作，用於標示陽台外推、平台外移等示意線。</div></div>
+        <div class="help-row"><span class="help-icon">〜</span><div class="help-text"><strong>弧線</strong>：三點定弧。第一點起點 → 第二點終點 → 第三點控制弧度。</div></div>
+        <div class="help-row"><span class="help-icon">🪣</span><div class="help-text"><strong>框填色</strong>：依序點擊畫出範圍（至少3點），雙擊或點起點（綠圈）閉合，自動填入目前選定的顏色。按 <span class="kbd">Enter</span> 也可完成。</div></div>
+      </div>
+
+      <div class="help-section">
+        <h3>🎨 填色方式</h3>
+        <div class="help-row"><span class="help-icon">1️⃣</span><div class="help-text"><strong>選取後填色</strong>：先點選物件，再點左側色板，立即填色。</div></div>
+        <div class="help-row"><span class="help-icon">2️⃣</span><div class="help-text"><strong>框填色</strong>：切換到🪣模式，先選好顏色，再畫範圍，完成後自動填入。</div></div>
+        <div class="help-row"><span class="help-icon">3️⃣</span><div class="help-text"><strong>房間</strong>：新增房間時會自動使用目前選定的顏色。</div></div>
+      </div>
+
+      <div class="help-section">
+        <h3>⌨️ 快捷鍵</h3>
+        <div class="help-row"><span class="help-icon">↩️</span><div class="help-text"><span class="kbd">Ctrl+Z</span> 復原 &nbsp;|&nbsp; <span class="kbd">Ctrl+Y</span> 重做</div></div>
+        <div class="help-row"><span class="help-icon">🗑️</span><div class="help-text"><span class="kbd">Delete</span> / <span class="kbd">Backspace</span> 刪除選取物件</div></div>
+        <div class="help-row"><span class="help-icon">✅</span><div class="help-text"><span class="kbd">Enter</span> 完成框填色</div></div>
+        <div class="help-row"><span class="help-icon">❌</span><div class="help-text"><span class="kbd">Esc</span> 取消目前繪製</div></div>
+      </div>
+
+      <div class="help-section">
+        <h3>💡 小技巧</h3>
+        <div class="help-row"><span class="help-icon">🔲</span><div class="help-text">開啟<strong>格線吸附</strong>後，所有點擊會自動對齊格線，畫出來的圖更整齊。</div></div>
+        <div class="help-row"><span class="help-icon">📐</span><div class="help-text">選取物件後，右上角<strong>屬性面板</strong>可調整旋轉角度、線條樣式與顏色。</div></div>
+        <div class="help-row"><span class="help-icon">💾</span><div class="help-text">按<strong>存圖</strong>可匯出 2 倍解析度 PNG，適合傳給客戶或存檔。</div></div>
+        <div class="help-row"><span class="help-icon">🧭</span><div class="help-text"><strong>指北針</strong>可自由旋轉，對齊實際朝向。</div></div>
+      </div>
+
+      <div style="text-align:center;margin-top:8px;font-size:0.72rem;color:var(--muted);">
+        by Ethan Chu｜台灣房屋東湖店 🏠
+      </div>
+    </div>
   </div>
 </div>
 
@@ -234,13 +299,13 @@ let history = [], histIdx = -1, suppressHist = false;
 const GRID = 20;
 let currentColor = '#FAFAFA';
 
-// 點對點狀態
+// 點對點
 let ptStarted = false, ptX = 0, ptY = 0, ptPreview = null;
 
-// 弧線狀態
+// 弧線
 let arcStep = 0, arcP1 = null, arcP2 = null, arcPreview = null;
 
-// 多邊形填色狀態
+// 多邊形
 let polyPts = [], polyPreviewPt = null;
 
 // ══════════════════════════════════════
@@ -252,16 +317,13 @@ window.onload = () => {
     width: wrap.clientWidth, height: wrap.clientHeight,
     backgroundColor: 'rgba(0,0,0,0)', selection: true, preserveObjectStacking: true
   });
-
-  // 多邊形預覽 canvas
   const pc = document.getElementById('polyPreviewCanvas');
   pc.width = wrap.clientWidth; pc.height = wrap.clientHeight;
   previewCtx = pc.getContext('2d');
 
-  // 滑鼠事件（使用 upperCanvas 捕捉所有點擊）
   canvas.upperCanvasEl.addEventListener('mousemove', onMouseMove);
   canvas.upperCanvasEl.addEventListener('click', onCanvasClick);
-  canvas.upperCanvasEl.addEventListener('dblclick', onDblClick);
+  canvas.upperCanvasEl.addEventListener('dblclick', () => { if (mode === 'poly') finishPoly(); });
 
   canvas.on('selection:created', showProp);
   canvas.on('selection:updated', showProp);
@@ -289,32 +351,32 @@ window.onload = () => {
 };
 
 // ══════════════════════════════════════
-// Snap & 指標
+// 工具函數
 // ══════════════════════════════════════
 function snap(v) { return snapOn ? Math.round(v / GRID) * GRID : v; }
 function getPt(e) {
-  const rect = canvas.upperCanvasEl.getBoundingClientRect();
-  return { x: snap(e.clientX - rect.left), y: snap(e.clientY - rect.top) };
+  const r = canvas.upperCanvasEl.getBoundingClientRect();
+  return { x: snap(e.clientX - r.left), y: snap(e.clientY - r.top) };
 }
-function moveDot(id, p, show = true) {
+function moveDot(id, p) {
   const el = document.getElementById(id);
-  el.style.left = p.x + 'px'; el.style.top = p.y + 'px';
-  el.style.display = show ? 'block' : 'none';
+  el.style.left = p.x + 'px'; el.style.top = p.y + 'px'; el.style.display = 'block';
 }
 function hideDot(id) { document.getElementById(id).style.display = 'none'; }
 function showHint(msg) {
   const h = document.getElementById('hintBar');
   if (msg) { h.textContent = msg; h.style.display = 'block'; } else h.style.display = 'none';
 }
+function cx() { return canvas.getWidth() / 2; }
+function cy() { return canvas.getHeight() / 2; }
 
 // ══════════════════════════════════════
-// 滑鼠移動
+// 滑鼠事件
 // ══════════════════════════════════════
 function onMouseMove(e) {
   const p = getPt(e);
   if (mode === 'select') { hideDot('dotCursor'); return; }
   moveDot('dotCursor', p);
-
   if ((mode === 'wall' || mode === 'dash') && ptStarted && ptPreview) {
     ptPreview.set({ x2: p.x, y2: p.y }); canvas.renderAll();
   }
@@ -322,36 +384,27 @@ function onMouseMove(e) {
     if (arcStep === 1 && arcPreview) { arcPreview.set({ x2: p.x, y2: p.y }); canvas.renderAll(); }
     if (arcStep === 2 && arcP1 && arcP2) {
       if (arcPreview) canvas.remove(arcPreview);
-      arcPreview = makeArcPath(arcP1, arcP2, p, true);
+      arcPreview = mkArc(arcP1, arcP2, p, true);
       suppressHist = true; canvas.add(arcPreview); suppressHist = false; canvas.renderAll();
     }
   }
-  if (mode === 'poly') {
-    polyPreviewPt = p; drawPolyPreview();
-  }
+  if (mode === 'poly') { polyPreviewPt = p; drawPolyPreview(); }
 }
 
-// ══════════════════════════════════════
-// 點擊分發
-// ══════════════════════════════════════
 function onCanvasClick(e) {
   const p = getPt(e);
-  if (mode === 'wall' || mode === 'dash') handleWallClick(p, e);
-  else if (mode === 'arc') handleArcClick(p, e);
-  else if (mode === 'poly') handlePolyClick(p, e);
-}
-function onDblClick(e) {
-  if (mode === 'poly') finishPoly();
+  if (mode === 'wall' || mode === 'dash') handleWall(p, e);
+  else if (mode === 'arc') handleArc(p, e);
+  else if (mode === 'poly') handlePoly(p, e);
 }
 
 // ══════════════════════════════════════
-// 畫牆（點對點）
+// 畫牆
 // ══════════════════════════════════════
-function handleWallClick(p, e) {
-  const target = canvas.findTarget(e);
-  if (target && !ptStarted) return;
+function handleWall(p, e) {
   const isDash = (mode === 'dash');
   if (!ptStarted) {
+    if (canvas.findTarget(e)) return;
     ptStarted = true; ptX = p.x; ptY = p.y;
     moveDot('dotStart', p);
     ptPreview = new fabric.Line([p.x, p.y, p.x, p.y], {
@@ -364,7 +417,7 @@ function handleWallClick(p, e) {
     if (ptPreview) canvas.remove(ptPreview);
     const line = new fabric.Line([ptX, ptY, p.x, p.y], {
       stroke: isDash ? '#888' : '#1a1a2e', strokeWidth: isDash ? 3 : 6,
-      strokeDashArray: isDash ? [8, 6] : [], selectable: true, evented: true, opacity: 1
+      strokeDashArray: isDash ? [8, 6] : [], selectable: true, evented: true
     });
     canvas.add(line); canvas.setActiveObject(line);
     resetPt(); showHint(''); saveHistory();
@@ -373,14 +426,12 @@ function handleWallClick(p, e) {
 function resetPt() { ptStarted = false; ptPreview = null; hideDot('dotStart'); }
 
 // ══════════════════════════════════════
-// 弧線（三點）
+// 弧線
 // ══════════════════════════════════════
-function handleArcClick(p, e) {
-  const target = canvas.findTarget(e);
-  if (target && arcStep === 0) return;
+function handleArc(p, e) {
   if (arcStep === 0) {
-    arcP1 = p; arcStep = 1;
-    moveDot('dotStart', p);
+    if (canvas.findTarget(e)) return;
+    arcP1 = p; arcStep = 1; moveDot('dotStart', p);
     arcPreview = new fabric.Line([p.x, p.y, p.x, p.y], { stroke: '#e94560', strokeWidth: 2, strokeDashArray: [4, 3], selectable: false, evented: false, opacity: 0.6 });
     suppressHist = true; canvas.add(arcPreview); suppressHist = false;
     showHint('第二點：弧線終點');
@@ -391,12 +442,12 @@ function handleArcClick(p, e) {
     showHint('第三點：控制弧度，Esc 取消');
   } else {
     if (arcPreview) canvas.remove(arcPreview);
-    const arc = makeArcPath(arcP1, arcP2, p, false);
+    const arc = mkArc(arcP1, arcP2, p, false);
     canvas.add(arc); canvas.setActiveObject(arc);
     resetArc(); showHint(''); saveHistory();
   }
 }
-function makeArcPath(p1, p2, ctrl, isPreview) {
+function mkArc(p1, p2, ctrl, isPreview) {
   return new fabric.Path(`M ${p1.x} ${p1.y} Q ${ctrl.x} ${ctrl.y} ${p2.x} ${p2.y}`, {
     fill: 'transparent', stroke: isPreview ? 'rgba(233,69,96,0.5)' : '#1a1a2e',
     strokeWidth: isPreview ? 2 : 6, strokeDashArray: isPreview ? [4, 3] : [],
@@ -406,80 +457,49 @@ function makeArcPath(p1, p2, ctrl, isPreview) {
 function resetArc() { arcStep = 0; arcP1 = null; arcP2 = null; arcPreview = null; hideDot('dotStart'); hideDot('dotMid'); }
 
 // ══════════════════════════════════════
-// 多邊形框填色
+// 多邊形填色
 // ══════════════════════════════════════
-function handlePolyClick(p, e) {
-  const target = canvas.findTarget(e);
-  if (target && polyPts.length === 0) return;
-
-  // 如果點到第一個點附近（距離<20）→ 閉合
+function handlePoly(p, e) {
+  if (canvas.findTarget(e) && polyPts.length === 0) return;
   if (polyPts.length >= 3) {
     const first = polyPts[0];
-    const dist = Math.hypot(p.x - first.x, p.y - first.y);
-    if (dist < 20) { finishPoly(); return; }
+    if (Math.hypot(p.x - first.x, p.y - first.y) < 20) { finishPoly(); return; }
   }
   polyPts.push(p);
   if (polyPts.length === 1) moveDot('dotStart', p);
   drawPolyPreview();
-  showHint(`已標 ${polyPts.length} 個點，雙擊或點起點完成，Enter 確認，Esc 取消`);
+  showHint(`已標 ${polyPts.length} 個點，雙擊或點起點完成，Enter 確認`);
 }
-
 function finishPoly() {
   if (polyPts.length < 3) return;
   const poly = new fabric.Polygon(polyPts.map(pt => ({ x: pt.x, y: pt.y })), {
-    fill: currentColor, stroke: '#1a1a2e', strokeWidth: 3,
-    selectable: true, evented: true, opacity: 0.85
+    fill: currentColor, stroke: '#1a1a2e', strokeWidth: 3, selectable: true, evented: true, opacity: 0.85
   });
   canvas.add(poly); canvas.setActiveObject(poly);
   resetPoly(); showHint(''); saveHistory();
 }
-
 function resetPoly() {
   polyPts = []; polyPreviewPt = null;
   previewCtx.clearRect(0, 0, previewCtx.canvas.width, previewCtx.canvas.height);
   hideDot('dotStart');
 }
-
 function drawPolyPreview() {
   const ctx = previewCtx;
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   if (polyPts.length === 0) return;
-
-  ctx.beginPath();
-  ctx.moveTo(polyPts[0].x, polyPts[0].y);
+  ctx.beginPath(); ctx.moveTo(polyPts[0].x, polyPts[0].y);
   for (let i = 1; i < polyPts.length; i++) ctx.lineTo(polyPts[i].x, polyPts[i].y);
   if (polyPreviewPt) ctx.lineTo(polyPreviewPt.x, polyPreviewPt.y);
-
-  // 填色預覽
-  if (polyPts.length >= 2) {
-    ctx.closePath();
-    ctx.fillStyle = currentColor === 'transparent' ? 'rgba(200,200,200,0.2)' : currentColor.replace(')', ',0.3)').replace('rgb', 'rgba').replace('#', '');
-    // 簡單處理 hex
+  if (polyPts.length >= 2 && currentColor !== 'transparent') {
     const hex = currentColor;
-    if (hex.startsWith('#')) {
-      const r = parseInt(hex.slice(1, 3), 16);
-      const g = parseInt(hex.slice(3, 5), 16);
-      const b = parseInt(hex.slice(5, 7), 16);
-      ctx.fillStyle = `rgba(${r},${g},${b},0.25)`;
+    if (hex.startsWith('#') && hex.length === 7) {
+      const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+      ctx.closePath(); ctx.fillStyle = `rgba(${r},${g},${b},0.25)`; ctx.fill();
     }
-    ctx.fill();
   }
-
-  ctx.setLineDash([5, 5]);
-  ctx.strokeStyle = '#e94560';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // 畫頂點
-  for (const pt of polyPts) {
-    ctx.beginPath();
-    ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = '#e94560'; ctx.fill();
-  }
-  // 起點標綠（提示可閉合）
-  ctx.beginPath();
-  ctx.arc(polyPts[0].x, polyPts[0].y, 7, 0, Math.PI * 2);
-  ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.setLineDash([5,5]); ctx.strokeStyle = '#e94560'; ctx.lineWidth = 2; ctx.stroke();
+  for (const pt of polyPts) { ctx.beginPath(); ctx.arc(pt.x,pt.y,4,0,Math.PI*2); ctx.fillStyle='#e94560'; ctx.fill(); }
+  ctx.beginPath(); ctx.arc(polyPts[0].x,polyPts[0].y,7,0,Math.PI*2); ctx.strokeStyle='#2ecc71'; ctx.lineWidth=2; ctx.stroke();
 }
 
 // ══════════════════════════════════════
@@ -488,26 +508,7 @@ function drawPolyPreview() {
 function cancelDraw() {
   if (ptPreview) canvas.remove(ptPreview);
   if (arcPreview) canvas.remove(arcPreview);
-  resetPt(); resetArc(); resetPoly();
-  showHint(''); canvas.renderAll();
-}
-
-// ══════════════════════════════════════
-// 選色
-// ══════════════════════════════════════
-function pickColor(el) {
-  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
-  el.classList.add('active');
-  currentColor = el.dataset.color;
-  // 同時填色選取物件
-  const obj = canvas.getActiveObject();
-  if (obj) applyFill(obj, currentColor);
-}
-function applyFill(obj, color) {
-  if (obj.type === 'group') obj.item(0).set('fill', color);
-  else if (obj.type === 'polygon') obj.set('fill', color);
-  else obj.set('fill', color);
-  canvas.renderAll(); saveHistory();
+  resetPt(); resetArc(); resetPoly(); showHint(''); canvas.renderAll();
 }
 
 // ══════════════════════════════════════
@@ -516,14 +517,13 @@ function applyFill(obj, color) {
 function setMode(m) {
   cancelDraw(); mode = m;
   document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-  const btn = document.getElementById('btn-' + m);
-  if (btn) btn.classList.add('active');
+  const btn = document.getElementById('btn-' + m); if (btn) btn.classList.add('active');
   canvas.selection = (m === 'select');
   canvas.defaultCursor = (m === 'select') ? 'default' : 'crosshair';
   if (m === 'select') hideDot('dotCursor');
-  const labels = { select: '選取', wall: '畫實線牆', dash: '畫虛線', arc: '畫弧線', poly: '框填色' };
+  const labels = { select:'選取', wall:'畫實線牆', dash:'畫虛線', arc:'畫弧線', poly:'框填色' };
   document.getElementById('modeLabel').textContent = labels[m] || m;
-  const hints = { wall: '點第一個位置', dash: '點第一個位置', arc: '第一點：弧線起點', poly: '點擊畫出範圍，雙擊或點起點完成' };
+  const hints = { wall:'點第一個位置', dash:'點第一個位置', arc:'第一點：弧線起點', poly:'點擊畫出範圍，雙擊或點起點完成' };
   if (hints[m]) showHint(hints[m]); else showHint('');
   if (window.innerWidth <= 768) closeSidebar();
 }
@@ -531,37 +531,40 @@ function setMode(m) {
 // ══════════════════════════════════════
 // 基礎物件
 // ══════════════════════════════════════
-function cx() { return canvas.getWidth() / 2; }
-function cy() { return canvas.getHeight() / 2; }
-
 function addRoom() {
-  const r = new fabric.Rect({ left: snap(cx()-75), top: snap(cy()-75), width: 150, height: 150, fill: currentColor, stroke: '#1a1a2e', strokeWidth: 4 });
+  const r = new fabric.Rect({ left:snap(cx()-75),top:snap(cy()-75),width:150,height:150,fill:currentColor,stroke:'#1a1a2e',strokeWidth:4 });
   canvas.add(r); canvas.setActiveObject(r); if (window.innerWidth<=768) closeSidebar();
 }
 function addText() {
-  const t = new fabric.IText('房間名稱', { left: snap(cx()-40), top: snap(cy()-12), fontSize: 18, fill: '#333', fontFamily: 'Microsoft JhengHei' });
+  const t = new fabric.IText('房間名稱', { left:snap(cx()-40),top:snap(cy()-12),fontSize:18,fill:'#333',fontFamily:'Microsoft JhengHei' });
   canvas.add(t); canvas.setActiveObject(t); if (window.innerWidth<=768) closeSidebar();
 }
 function addDimension() {
   const g = new fabric.Group([
-    new fabric.Line([0,0,100,0], {stroke:'#e94560',strokeWidth:2}),
-    new fabric.Line([0,-6,0,6], {stroke:'#e94560',strokeWidth:2}),
-    new fabric.Line([100,-6,100,6], {stroke:'#e94560',strokeWidth:2}),
-    new fabric.IText('___cm', {left:28,top:-22,fontSize:12,fill:'#e94560',fontFamily:'Microsoft JhengHei'})
-  ], { left:snap(cx()-50), top:snap(cy()) });
+    new fabric.Line([0,0,100,0],{stroke:'#e94560',strokeWidth:2}),
+    new fabric.Line([0,-6,0,6],{stroke:'#e94560',strokeWidth:2}),
+    new fabric.Line([100,-6,100,6],{stroke:'#e94560',strokeWidth:2}),
+    new fabric.IText('___cm',{left:28,top:-22,fontSize:12,fill:'#e94560',fontFamily:'Microsoft JhengHei'})
+  ], {left:snap(cx()-50),top:snap(cy())});
   canvas.add(g); canvas.setActiveObject(g); if (window.innerWidth<=768) closeSidebar();
 }
 
 // ══════════════════════════════════════
-// 物件工廠（修正版）
+// 輔助：建立帶 originX/Y center 的物件
+// （在 Group 內用 left/top 設定相對中心位置）
+// ══════════════════════════════════════
+function c(obj) { return Object.assign(obj, { originX:'center', originY:'center' }); }
+
+// ══════════════════════════════════════
+// 物件工廠
 // ══════════════════════════════════════
 const OBJS = {
 
   door: () => new fabric.Group([
-    new fabric.Line([0,0,0,60], {stroke:'#1a1a2e',strokeWidth:5}),
-    new fabric.Line([0,60,60,60], {stroke:'#1a1a2e',strokeWidth:3}),
-    new fabric.Path('M 0 0 A 60 60 0 0 1 60 60', {fill:'transparent',stroke:'#1a1a2e',strokeWidth:2,strokeDashArray:[5,3]})
-  ], {left:snap(cx()-30),top:snap(cy()-60)}),
+    new fabric.Line([0,0,0,60],{stroke:'#1a1a2e',strokeWidth:5}),
+    new fabric.Line([0,60,60,60],{stroke:'#1a1a2e',strokeWidth:3}),
+    new fabric.Path('M 0 0 A 60 60 0 0 1 60 60',{fill:'transparent',stroke:'#1a1a2e',strokeWidth:2,strokeDashArray:[5,3]})
+  ],{left:snap(cx()-30),top:snap(cy()-60)}),
 
   'door-slide': () => new fabric.Group([
     new fabric.Rect({width:80,height:8,fill:'#ddd',stroke:'#888',strokeWidth:1}),
@@ -569,103 +572,77 @@ const OBJS = {
     new fabric.Rect({left:38,top:8,width:36,height:50,fill:'#f0f0f0',stroke:'#1a1a2e',strokeWidth:2.5,rx:2,opacity:0.7}),
     new fabric.Text('←',{left:6,top:24,fontSize:14,fill:'#888',fontFamily:'Arial'}),
     new fabric.Text('→',{left:54,top:24,fontSize:14,fill:'#888',fontFamily:'Arial'})
-  ], {left:snap(cx()-40),top:snap(cy()-30)}),
+  ],{left:snap(cx()-40),top:snap(cy()-30)}),
 
   window: () => new fabric.Group([
     new fabric.Rect({width:80,height:12,fill:'white',stroke:'#1a1a2e',strokeWidth:2.5}),
     new fabric.Rect({left:2,top:2,width:76,height:8,fill:'#b3d9f5'}),
     new fabric.Line([40,0,40,12],{stroke:'#1a1a2e',strokeWidth:1.5})
-  ], {left:snap(cx()-40),top:snap(cy()-6)}),
+  ],{left:snap(cx()-40),top:snap(cy()-6)}),
 
   balcony: () => {
-    const W=100, H=50, items=[];
+    const W=100,H=50,items=[];
     items.push(new fabric.Rect({width:W,height:H,fill:'rgba(176,220,245,0.15)',stroke:'#1a1a2e',strokeWidth:3}));
     for(let i=1;i<=4;i++) items.push(new fabric.Line([i*(W/5),0,i*(W/5),H],{stroke:'#4a9fc4',strokeWidth:1.5,opacity:0.8}));
     items.push(new fabric.Line([0,H/2,W,H/2],{stroke:'#4a9fc4',strokeWidth:1,strokeDashArray:[4,3],opacity:0.6}));
     items.push(new fabric.Line([0,0,W,0],{stroke:'#1a1a2e',strokeWidth:4}));
     items.push(new fabric.Line([0,H,W,H],{stroke:'#1a1a2e',strokeWidth:4}));
-    return new fabric.Group(items, {left:snap(cx()-50),top:snap(cy()-25)});
+    return new fabric.Group(items,{left:snap(cx()-50),top:snap(cy()-25)});
   },
 
-  // ✅ 修正：半圓陽台 - 用 Path 統一繪製，不用 Group 內座標問題
   'balcony-semi': () => {
-    const R = 55;
-    const items = [];
-    // 半圓弧框
-    items.push(new fabric.Path(`M ${-R} 0 A ${R} ${R} 0 0 0 ${R} 0`, {
-      fill: 'rgba(176,220,245,0.2)', stroke: '#1a1a2e', strokeWidth: 3
-    }));
-    // 放射分隔線（5段）
-    for (let i = 1; i <= 4; i++) {
-      const angle = (Math.PI / 5) * i;
-      const x2 = -R * Math.cos(angle);
-      const y2 = -R * Math.sin(angle);
-      items.push(new fabric.Line([0, 0, x2, y2], { stroke: '#4a9fc4', strokeWidth: 1.5, opacity: 0.7 }));
+    const R=55,items=[];
+    items.push(new fabric.Path(`M ${-R} 0 A ${R} ${R} 0 0 0 ${R} 0`,{fill:'rgba(176,220,245,0.2)',stroke:'#1a1a2e',strokeWidth:3}));
+    for(let i=1;i<=4;i++){
+      const angle=(Math.PI/5)*i;
+      items.push(new fabric.Line([0,0,-R*Math.cos(angle),-R*Math.sin(angle)],{stroke:'#4a9fc4',strokeWidth:1.5,opacity:0.7}));
     }
-    // 底部橫線
-    items.push(new fabric.Line([-R, 0, R, 0], { stroke: '#1a1a2e', strokeWidth: 4 }));
-    return new fabric.Group(items, { left: snap(cx()), top: snap(cy()) });
-  },
-
-  // ✅ 修正：四分之一圓弧形陽台 - 方向一致
-  'balcony-quarter': () => {
-    const R = 60;
-    const items = [];
-    // 弧形區域
-    items.push(new fabric.Path(`M 0 0 L ${R} 0 A ${R} ${R} 0 0 0 0 ${R} Z`, {
-      fill: 'rgba(176,220,245,0.2)', stroke: '#1a1a2e', strokeWidth: 3
-    }));
-    // 放射分隔線（4條）
-    for (let i = 1; i <= 3; i++) {
-      const angle = (Math.PI / 2 / 4) * i;
-      const x2 = R * Math.cos(angle);
-      const y2 = R * Math.sin(angle);
-      items.push(new fabric.Line([0, 0, x2, y2], { stroke: '#4a9fc4', strokeWidth: 1.5, opacity: 0.7 }));
-    }
-    return new fabric.Group(items, { left: snap(cx()-30), top: snap(cy()-30) });
+    items.push(new fabric.Line([-R,0,R,0],{stroke:'#1a1a2e',strokeWidth:4}));
+    return new fabric.Group(items,{left:snap(cx()),top:snap(cy())});
   },
 
   pillar: () => new fabric.Group([
     new fabric.Rect({width:30,height:30,fill:'#888',stroke:'#333',strokeWidth:2}),
     new fabric.Rect({left:5,top:5,width:20,height:20,fill:'#aaa'})
-  ], {left:snap(cx()-15),top:snap(cy()-15)}),
+  ],{left:snap(cx()-15),top:snap(cy()-15)}),
 
-  // ✅ 修正：指北針 - 用 SVG Path 精準繪製
+  // ✅ 指北針 - 全部用 originX/Y:center，座標相對 Group 中心
   compass: () => {
-    const items = [];
     const R = 32;
-    // 外圓
-    items.push(new fabric.Circle({ radius: R, fill: 'white', stroke: '#1a1a2e', strokeWidth: 2.5, left: -R, top: -R }));
-    // 北方（黑色實心三角）
-    items.push(new fabric.Path('M 0 -28 L 9 0 L 0 -8 L -9 0 Z', { fill: '#1a1a2e', stroke: 'none' }));
-    // 南方（白色空心三角）
-    items.push(new fabric.Path('M 0 28 L 9 0 L 0 8 L -9 0 Z', { fill: 'white', stroke: '#1a1a2e', strokeWidth: 1.5 }));
-    // 中心圓
-    items.push(new fabric.Circle({ radius: 5, fill: 'white', stroke: '#1a1a2e', strokeWidth: 2, left: -5, top: -5 }));
-    // 文字
-    items.push(new fabric.Text('N', { left: -5, top: -R - 14, fontSize: 11, fill: '#1a1a2e', fontWeight: 'bold', fontFamily: 'Arial' }));
-    items.push(new fabric.Text('S', { left: -5, top: R + 2, fontSize: 11, fill: '#1a1a2e', fontFamily: 'Arial' }));
-    items.push(new fabric.Text('E', { left: R + 4, top: -6, fontSize: 10, fill: '#1a1a2e', fontFamily: 'Arial' }));
-    items.push(new fabric.Text('W', { left: -R - 14, top: -6, fontSize: 10, fill: '#1a1a2e', fontFamily: 'Arial' }));
-    return new fabric.Group(items, { left: snap(cx()), top: snap(cy()) });
+    const items = [
+      // 外圓
+      c(new fabric.Circle({radius:R,fill:'white',stroke:'#1a1a2e',strokeWidth:2.5,left:0,top:0})),
+      // 北方黑色實心鑽石
+      c(new fabric.Path('M 0 -28 L 8 -5 L 0 -11 L -8 -5 Z',{fill:'#1a1a2e',stroke:'none',left:0,top:0})),
+      // 南方白色空心鑽石
+      c(new fabric.Path('M 0 28 L 8 5 L 0 11 L -8 5 Z',{fill:'white',stroke:'#1a1a2e',strokeWidth:1.5,left:0,top:0})),
+      // 中心圓
+      c(new fabric.Circle({radius:4,fill:'white',stroke:'#1a1a2e',strokeWidth:1.5,left:0,top:0})),
+      // 文字
+      c(new fabric.Text('N',{left:0,top:-(R+12),fontSize:11,fill:'#1a1a2e',fontWeight:'bold',fontFamily:'Arial'})),
+      c(new fabric.Text('S',{left:0,top:R+10,fontSize:11,fill:'#1a1a2e',fontFamily:'Arial'})),
+      c(new fabric.Text('E',{left:R+10,top:0,fontSize:10,fill:'#1a1a2e',fontFamily:'Arial'})),
+      c(new fabric.Text('W',{left:-(R+16),top:0,fontSize:10,fill:'#1a1a2e',fontFamily:'Arial'})),
+    ];
+    return new fabric.Group(items,{left:snap(cx()),top:snap(cy())});
   },
 
   'stair-straight': () => {
-    const steps = [];
-    for (let i = 0; i < 7; i++) steps.push(new fabric.Rect({left:0,top:i*14,width:60,height:14,fill:i%2===0?'#ddd':'#c8c8c8',stroke:'#888',strokeWidth:1}));
+    const steps=[];
+    for(let i=0;i<7;i++) steps.push(new fabric.Rect({left:0,top:i*14,width:60,height:14,fill:i%2===0?'#ddd':'#c8c8c8',stroke:'#888',strokeWidth:1}));
     steps.push(new fabric.Text('↑',{left:22,top:2,fontSize:14,fill:'#666',fontFamily:'Arial'}));
-    return new fabric.Group(steps, {left:snap(cx()-30),top:snap(cy()-49)});
+    return new fabric.Group(steps,{left:snap(cx()-30),top:snap(cy()-49)});
   },
 
   'stair-spiral': () => {
-    const items = [];
-    items.push(new fabric.Circle({radius:45,fill:'#e8e8e8',stroke:'#888',strokeWidth:2,left:-45,top:-45}));
-    items.push(new fabric.Circle({radius:12,fill:'#bbb',stroke:'#666',strokeWidth:2,left:-12,top:-12}));
-    for (let i=0;i<8;i++) {
+    const items=[];
+    items.push(c(new fabric.Circle({radius:45,fill:'#e8e8e8',stroke:'#888',strokeWidth:2,left:0,top:0})));
+    items.push(c(new fabric.Circle({radius:12,fill:'#bbb',stroke:'#666',strokeWidth:2,left:0,top:0})));
+    for(let i=0;i<8;i++){
       const a=(i*45)*Math.PI/180;
-      items.push(new fabric.Line([12*Math.cos(a),12*Math.sin(a),45*Math.cos(a),45*Math.sin(a)],{stroke:'#999',strokeWidth:1.5}));
+      items.push(c(new fabric.Line([12*Math.cos(a),12*Math.sin(a),45*Math.cos(a),45*Math.sin(a)],{stroke:'#999',strokeWidth:1.5,left:0,top:0})));
     }
-    items.push(new fabric.Text('旋梯',{left:-11,top:-8,fontSize:10,fill:'#555',fontFamily:'Microsoft JhengHei'}));
+    items.push(c(new fabric.Text('旋梯',{left:0,top:0,fontSize:10,fill:'#555',fontFamily:'Microsoft JhengHei'})));
     return new fabric.Group(items,{left:snap(cx()),top:snap(cy())});
   },
 
@@ -696,19 +673,18 @@ const OBJS = {
   ],{left:snap(cx()-25),top:snap(cy()-22)}),
 
   shower: () => new fabric.Group([
-    new fabric.Rect({width:70,height:70,fill:'#e8f4ff',stroke:'#888',strokeWidth:2,rx:2}),
+    new fabric.Rect({width:70,height:70,fill:'#e8f4ff',stroke:'#888',strokeWidth:2}),
     new fabric.Circle({radius:7,left:28,top:28,fill:'#aaa',stroke:'#888',strokeWidth:1}),
     new fabric.Line([28,31.5,42,31.5],{stroke:'#888',strokeWidth:1}),
     new fabric.Line([35,24.5,35,38.5],{stroke:'#888',strokeWidth:1})
   ],{left:snap(cx()-35),top:snap(cy()-35)}),
 
   stove: () => {
-    const make=(lx,ly)=>new fabric.Circle({radius:12,left:lx,top:ly,fill:'#ccc',stroke:'#888',strokeWidth:1});
-    const dot=(lx,ly)=>new fabric.Circle({radius:3,left:lx,top:ly,fill:'#888'});
+    const mk=(lx,ly)=>new fabric.Circle({radius:12,left:lx,top:ly,fill:'#ccc',stroke:'#888',strokeWidth:1});
+    const dt=(lx,ly)=>new fabric.Circle({radius:3,left:lx,top:ly,fill:'#888'});
     return new fabric.Group([
       new fabric.Rect({width:70,height:60,fill:'#f0f0f0',stroke:'#888',strokeWidth:2}),
-      make(8,8),make(46,8),make(8,38),make(46,38),
-      dot(17,17),dot(55,17),dot(17,47),dot(55,47)
+      mk(8,8),mk(46,8),mk(8,38),mk(46,38),dt(17,17),dt(55,17),dt(17,47),dt(55,47)
     ],{left:snap(cx()-35),top:snap(cy()-30)});
   },
 
@@ -746,25 +722,22 @@ const OBJS = {
     new fabric.Rect({left:98,top:10,width:12,height:50,fill:'#B0C4DE',stroke:'#708090',strokeWidth:1.5,rx:3})
   ],{left:snap(cx()-60),top:snap(cy()-30)}),
 
-  // ✅ 修正：餐桌 - 不用 Nested Group，改用 Path 畫椅子
+  // ✅ 餐桌 - 扁平化，不用 Nested Group，椅子用對稱矩形
   table: () => {
-    const items = [];
-    // 桌面橢圓
-    items.push(new fabric.Ellipse({rx:50,ry:35,fill:'#DEB887',stroke:'#8B7355',strokeWidth:2,left:-50,top:-35}));
-    // 椅子（用 Path 畫，相對 Group 中心定位）
-    function chair(cx2, cy2, rot) {
-      // 椅背 + 椅座 用簡單矩形+旋轉
-      const g = new fabric.Group([
-        new fabric.Rect({left:-14,top:-18,width:28,height:8,fill:'#f0f0f0',stroke:'#aaa',strokeWidth:1,rx:3}),
-        new fabric.Rect({left:-12,top:-10,width:24,height:18,fill:'#e0e0e0',stroke:'#aaa',strokeWidth:1,rx:2})
-      ], {left:cx2, top:cy2, angle:rot});
-      return g;
-    }
-    items.push(chair(0, -55, 0));    // 上
-    items.push(chair(0, 55, 180));   // 下
-    items.push(chair(-65, 0, 90));   // 左
-    items.push(chair(65, 0, -90));   // 右
-    return new fabric.Group(items, {left:snap(cx()-50),top:snap(cy()-35)});
+    const RX=50,RY=35,GAP=5,CW=30,CH=20;
+    const items=[
+      // 桌面
+      c(new fabric.Ellipse({rx:RX,ry:RY,fill:'#DEB887',stroke:'#8B7355',strokeWidth:2,left:0,top:0})),
+      // 上椅（水平30x20）
+      c(new fabric.Rect({width:CW,height:CH,fill:'#f0f0f0',stroke:'#999',strokeWidth:1.5,rx:3,left:0,top:-(RY+GAP+CH/2)})),
+      // 下椅
+      c(new fabric.Rect({width:CW,height:CH,fill:'#f0f0f0',stroke:'#999',strokeWidth:1.5,rx:3,left:0,top:RY+GAP+CH/2})),
+      // 左椅（垂直20x30）
+      c(new fabric.Rect({width:CH,height:CW,fill:'#f0f0f0',stroke:'#999',strokeWidth:1.5,rx:3,left:-(RX+GAP+CH/2),top:0})),
+      // 右椅
+      c(new fabric.Rect({width:CH,height:CW,fill:'#f0f0f0',stroke:'#999',strokeWidth:1.5,rx:3,left:RX+GAP+CH/2,top:0})),
+    ];
+    return new fabric.Group(items,{left:snap(cx()-RX),top:snap(cy()-RY)});
   },
 
   desk: () => new fabric.Group([
@@ -788,14 +761,28 @@ function addObj(type) {
 }
 
 // ══════════════════════════════════════
+// 填色
+// ══════════════════════════════════════
+function pickColor(el) {
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active'); currentColor = el.dataset.color;
+  const obj = canvas.getActiveObject();
+  if (obj) { applyFill(obj, currentColor); }
+}
+function applyFill(obj, color) {
+  if (obj.type === 'group') obj.item(0).set('fill', color);
+  else obj.set('fill', color);
+  canvas.renderAll(); saveHistory();
+}
+
+// ══════════════════════════════════════
 // 屬性面板
 // ══════════════════════════════════════
 function showProp() {
   const obj = canvas.getActiveObject(); if (!obj) return;
   document.getElementById('propPanel').style.display = 'block';
   const a = Math.round(obj.angle || 0);
-  document.getElementById('propAngle').value = a;
-  document.getElementById('angleVal').textContent = a + '°';
+  document.getElementById('propAngle').value = a; document.getElementById('angleVal').textContent = a + '°';
   document.getElementById('propLabel').value = obj.type === 'i-text' ? obj.text : (obj.name || '');
   const isDash = obj.strokeDashArray && obj.strokeDashArray.length > 0;
   document.getElementById('lineSolid').className = 'line-btn' + (isDash ? '' : ' active');
@@ -809,13 +796,11 @@ function updateLabel() {
 function updateAngle() {
   const obj = canvas.getActiveObject(); if (!obj) return;
   const v = parseInt(document.getElementById('propAngle').value);
-  document.getElementById('angleVal').textContent = v + '°';
-  obj.set('angle', v); canvas.renderAll();
+  document.getElementById('angleVal').textContent = v + '°'; obj.set('angle', v); canvas.renderAll();
 }
 function updateStroke() {
   const obj = canvas.getActiveObject(); if (!obj) return;
-  obj.set('stroke', document.getElementById('propStroke').value);
-  canvas.renderAll(); saveHistory();
+  obj.set('stroke', document.getElementById('propStroke').value); canvas.renderAll(); saveHistory();
 }
 function setLineStyle(style) {
   const obj = canvas.getActiveObject(); if (!obj) return;
@@ -830,8 +815,7 @@ function setLineStyle(style) {
 // ══════════════════════════════════════
 function deleteSelected() {
   const obj = canvas.getActiveObject(); if (!obj) return;
-  canvas.remove(obj); saveHistory();
-  document.getElementById('propPanel').style.display = 'none';
+  canvas.remove(obj); saveHistory(); document.getElementById('propPanel').style.display = 'none';
 }
 function clearAll() {
   if (!confirm('確定清空畫布？')) return;
@@ -849,7 +833,7 @@ function toggleGrid() {
 }
 
 // ══════════════════════════════════════
-// 復原 / 重做
+// Undo / Redo
 // ══════════════════════════════════════
 function saveHistory() {
   const json = JSON.stringify(canvas.toJSON());
@@ -858,8 +842,7 @@ function saveHistory() {
 function undo() { if (histIdx <= 0) return; histIdx--; loadState(history[histIdx]); }
 function redo() { if (histIdx >= history.length-1) return; histIdx++; loadState(history[histIdx]); }
 function loadState(json) {
-  suppressHist = true;
-  canvas.loadFromJSON(json, () => { canvas.renderAll(); suppressHist = false; updateStatus(); });
+  suppressHist = true; canvas.loadFromJSON(json, () => { canvas.renderAll(); suppressHist = false; updateStatus(); });
 }
 function updateStatus() { document.getElementById('objCount').textContent = canvas.getObjects().length; }
 
@@ -870,8 +853,17 @@ function exportImg() {
   canvas.discardActiveObject(); canvas.renderAll();
   const link = document.createElement('a');
   link.download = 'floor_plan_' + Date.now() + '.png';
-  link.href = canvas.toDataURL({ format: 'png', multiplier: 2 });
-  link.click();
+  link.href = canvas.toDataURL({ format:'png', multiplier:2 }); link.click();
+}
+
+// ══════════════════════════════════════
+// 說明 Modal
+// ══════════════════════════════════════
+function openHelp() { document.getElementById('helpModal').classList.add('open'); }
+function closeHelp(e) {
+  if (!e || e.target === document.getElementById('helpModal')) {
+    document.getElementById('helpModal').classList.remove('open');
+  }
 }
 
 // ══════════════════════════════════════
