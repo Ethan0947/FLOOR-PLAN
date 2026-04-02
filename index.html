@@ -360,27 +360,43 @@ window.onload = () => {
   canvas.on('object:added', () => { if (!suppressHist) saveHistory(); updateStatus(); });
   canvas.on('object:removed', updateStatus);
 
-  // ✅ 快捷鍵修正說明：
-  // 1. 用 window + useCapture:true 確保在 Fabric.js canvas 搶走 focus 後仍能攔截事件
-  // 2. 全部加 e.preventDefault() 防止瀏覽器預設行為干擾（如 Ctrl+Z 觸發瀏覽器undo）
-  // 3. INPUT/TEXTAREA 裡不攔截，讓使用者能正常輸入
+  // ✅ 快捷鍵終極修法：
+  // 問題根本：Fabric.js 有隱藏 <textarea> 會搶走 focus，
+  //           用 e.target 判斷不可靠，要改用 document.activeElement。
+  // 解法：
+  //   1. window + capture phase（比任何元素更早攔截）
+  //   2. 用 document.activeElement 判斷當前焦點，不看 e.target
+  //   3. 直接查 canvas.getActiveObject().isEditing 偵測 Fabric 文字編輯中
   window.addEventListener('keydown', e => {
-    const tag = e.target.tagName;
-    const isTyping = (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable);
-    // 在文字輸入框時，只攔截 Esc，其他全放行
-    if (isTyping) {
-      if (e.key === 'Escape') { e.preventDefault(); cancelDraw(); }
+    // 情況一：Fabric.js 正在編輯文字（IText 雙擊後）
+    // 這時鍵盤應交給 Fabric 處理，只攔截 Escape 讓使用者能跳出編輯
+    const fabricEditing = canvas && canvas.getActiveObject() && canvas.getActiveObject().isEditing;
+    if (fabricEditing) {
+      if (e.key === 'Escape') { canvas.getActiveObject().exitEditing(); canvas.renderAll(); }
+      return; // 其他鍵完全放行給 Fabric 處理
+    }
+
+    // 情況二：焦點在我們自己的 UI 輸入元件上（屬性面板 input 等）
+    // 用 document.activeElement 判斷，比 e.target 可靠
+    const focused = document.activeElement;
+    const focusTag = focused ? focused.tagName : '';
+    if (focusTag === 'INPUT' || focusTag === 'TEXTAREA' || focusTag === 'SELECT') {
+      // 在 UI 輸入中，只攔截 Escape
+      if (e.key === 'Escape') { e.preventDefault(); focused.blur(); cancelDraw(); }
       return;
     }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) { e.preventDefault(); redo(); }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'c') { e.preventDefault(); copySelected(); }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'v') { e.preventDefault(); pasteClipboard(); }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'd') { e.preventDefault(); duplicateSelected(); }
-    if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteSelected(); }
-    if (e.key === 'Escape') { e.preventDefault(); cancelDraw(); }
-    if (e.key === 'Enter' && mode === 'poly') { e.preventDefault(); finishPoly(); }
-  }, true); // ← true = capture phase，比 Fabric 更早攔截
+
+    // 情況三：正常狀態，執行快捷鍵
+    e.preventDefault(); // 全部阻擋瀏覽器預設（避免 Ctrl+Z 觸發瀏覽器 undo 等）
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') undo();
+    else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) redo();
+    else if ((e.ctrlKey || e.metaKey) && e.key === 'c') copySelected();
+    else if ((e.ctrlKey || e.metaKey) && e.key === 'v') pasteClipboard();
+    else if ((e.ctrlKey || e.metaKey) && e.key === 'd') duplicateSelected();
+    else if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+    else if (e.key === 'Escape') cancelDraw();
+    else if (e.key === 'Enter' && mode === 'poly') finishPoly();
+  }, true); // capture phase，永遠最先執行
 
   window.addEventListener('resize', () => {
     canvas.setWidth(wrap.clientWidth); canvas.setHeight(wrap.clientHeight);
