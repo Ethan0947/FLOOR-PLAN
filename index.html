@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1a1a2e">
-<title>Ethan 格局神器 V3</title>
+<title>Ethan 格局神器 V3.4</title>
 <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
 <style>
 :root{--bg:#1a1a2e;--sidebar:#16213e;--panel:#0f3460;--accent:#e94560;--accent2:#f5a623;--text:#eaeaea;--muted:#8892a4;--border:#2a2a4a;--btn:#1e2a45;--btn-hover:#2a3a5a;--green:#2ecc71;--radius:10px;}
@@ -85,6 +85,18 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
 .line-btn{flex:1;padding:5px;background:var(--btn);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;font-size:0.7rem;text-align:center;}
 .line-btn.active{background:var(--accent);border-color:var(--accent);}
 
+/* ── 底圖控制 ── */
+.bg-upload-btn{width:100%;padding:8px;background:var(--panel);border:1px dashed var(--accent2);border-radius:var(--radius);color:var(--accent2);font-size:0.75rem;font-weight:700;cursor:pointer;text-align:center;transition:all 0.15s;margin-bottom:7px;}
+.bg-upload-btn:hover{background:var(--btn-hover);}
+.bg-controls{display:none;}
+.bg-controls.show{display:block;}
+.bg-slider-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.bg-slider-row label{font-size:0.68rem;color:var(--muted);white-space:nowrap;min-width:36px;}
+.bg-btn-row{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.bg-btn{padding:6px;background:var(--btn);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.68rem;cursor:pointer;text-align:center;}
+.bg-btn:hover{background:var(--btn-hover);}
+.bg-btn.danger{border-color:var(--accent);color:var(--accent);}
+
 /* ── Mobile ── */
 .menu-toggle{display:none;position:fixed;top:12px;left:12px;z-index:2000;background:var(--accent);color:white;border:none;border-radius:50%;width:42px;height:42px;font-size:1.1rem;cursor:pointer;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(233,69,96,0.4);}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1400;}
@@ -102,11 +114,14 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
 <button class="menu-toggle" onclick="toggleSidebar()">🛠️</button>
 <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
+<!-- 隱藏 file input -->
+<input type="file" id="bgFileInput" accept="image/*" style="display:none" onchange="loadBgImage(event)">
+
 <!-- ── SIDEBAR ── -->
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <div><div class="logo">格局神器</div><div style="font-size:0.63rem;color:var(--muted);margin-top:1px;">Ethan Floor Plan Tool</div></div>
-    <span class="version">V3</span>
+    <span class="version">V3.4</span>
   </div>
 
   <div class="section">
@@ -120,6 +135,25 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
       <button class="tool-btn" onclick="addRoom()"><span class="icon">⬜</span>房間</button>
       <button class="tool-btn" onclick="addText()"><span class="icon">📝</span>文字</button>
       <button class="tool-btn" onclick="addDimension()"><span class="icon">📏</span>標尺</button>
+    </div>
+  </div>
+
+  <!-- ── 底圖上傳區 (V3.4 新增) ── -->
+  <div class="section">
+    <div class="section-title">🖼️ 底圖描邊 <span style="color:var(--accent);font-size:0.6rem;">NEW</span></div>
+    <div style="font-size:0.65rem;color:var(--muted);margin-bottom:6px;">上傳格局圖當底圖，照著描邊，比例絕對精準</div>
+    <button class="bg-upload-btn" onclick="document.getElementById('bgFileInput').click()">📎 上傳底圖</button>
+    <div class="bg-controls" id="bgControls">
+      <div class="bg-slider-row">
+        <label>透明度</label>
+        <input type="range" id="bgOpacity" min="5" max="80" value="35" oninput="updateBgOpacity()" style="flex:1;accent-color:var(--accent2);">
+        <span id="bgOpacityVal" style="font-size:0.65rem;color:var(--accent2);min-width:28px;text-align:right;">35%</span>
+      </div>
+      <div class="bg-btn-row">
+        <button class="bg-btn" onclick="toggleBgVisibility()" id="bgVisBtn">👁 隱藏底圖</button>
+        <button class="bg-btn danger" onclick="removeBg()">🗑 移除底圖</button>
+      </div>
+      <div style="font-size:0.62rem;color:var(--muted);margin-top:5px;">💡 存圖前點「隱藏底圖」，匯出結果更乾淨</div>
     </div>
   </div>
 
@@ -217,8 +251,6 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
   <div class="dot-marker dot-green" id="dotMid"></div>
   <div class="hint-bar" id="hintBar"></div>
   <div class="statusbar">模式：<span id="modeLabel">選取</span> ｜ 物件：<span id="objCount">0</span></div>
-
-  <!-- 說明按鈕 -->
   <button class="help-btn" onclick="openHelp()" title="使用說明">？</button>
 </div>
 
@@ -244,27 +276,25 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
 <div class="modal-overlay" id="helpModal" onclick="closeHelp(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
-      <h2>📖 格局神器使用說明</h2>
+      <h2>📖 格局神器使用說明 V3.4</h2>
       <button class="modal-close" onclick="closeHelp()">✕</button>
     </div>
     <div class="modal-body">
-
+      <div class="help-section">
+        <h3>🖼️ 底圖描邊（V3.4 新增）</h3>
+        <div class="help-row"><span class="help-icon">📎</span><div class="help-text"><strong>上傳底圖</strong>：點「上傳底圖」選擇格局圖照片，圖片會自動置底鎖定，不會被誤選或移動。</div></div>
+        <div class="help-row"><span class="help-icon">🎚️</span><div class="help-text"><strong>透明度滑桿</strong>：調整底圖深淺，建議描邊時設 30-50%，看得到又不干擾。</div></div>
+        <div class="help-row"><span class="help-icon">👁</span><div class="help-text"><strong>隱藏底圖</strong>：存圖前點隱藏，匯出的圖只有你描的線，乾淨清楚。</div></div>
+        <div class="help-row"><span class="help-icon">📐</span><div class="help-text"><strong>使用方式</strong>：上傳後切換「實線牆」模式，沿著底圖邊緣描繪，再加上標尺和文字標籤。</div></div>
+      </div>
       <div class="help-section">
         <h3>✏️ 繪圖模式</h3>
-        <div class="help-row"><span class="help-icon">✋</span><div class="help-text"><strong>選取</strong>：點擊物件選取，可拖移、縮放、旋轉。8個控制點可自由縮放。</div></div>
-        <div class="help-row"><span class="help-icon">➖</span><div class="help-text"><strong>實線牆</strong>：點第一個位置設起點（橘點出現），再點第二個位置完成一條牆。</div></div>
-        <div class="help-row"><span class="help-icon">┄</span><div class="help-text"><strong>虛線</strong>：同畫牆操作，用於標示陽台外推、平台外移等示意線。</div></div>
+        <div class="help-row"><span class="help-icon">✋</span><div class="help-text"><strong>選取</strong>：點擊物件選取，可拖移、縮放、旋轉。</div></div>
+        <div class="help-row"><span class="help-icon">➖</span><div class="help-text"><strong>實線牆</strong>：點第一個位置設起點（橘點出現），再點第二個位置完成。切換此模式時自動取消選取，不再有方向鍵衝突。</div></div>
+        <div class="help-row"><span class="help-icon">┄</span><div class="help-text"><strong>虛線</strong>：同畫牆，用於標示陽台外推、平台外移等。</div></div>
         <div class="help-row"><span class="help-icon">〜</span><div class="help-text"><strong>弧線</strong>：三點定弧。第一點起點 → 第二點終點 → 第三點控制弧度。</div></div>
-        <div class="help-row"><span class="help-icon">🪣</span><div class="help-text"><strong>框填色</strong>：依序點擊畫出範圍（至少3點），雙擊或點起點（綠圈）閉合，自動填入目前選定的顏色。按 <span class="kbd">Enter</span> 也可完成。</div></div>
+        <div class="help-row"><span class="help-icon">🪣</span><div class="help-text"><strong>框填色</strong>：依序點擊畫出範圍（至少3點），雙擊或點起點（綠圈）閉合。</div></div>
       </div>
-
-      <div class="help-section">
-        <h3>🎨 填色方式</h3>
-        <div class="help-row"><span class="help-icon">1️⃣</span><div class="help-text"><strong>選取後填色</strong>：先點選物件，再點左側色板，立即填色。</div></div>
-        <div class="help-row"><span class="help-icon">2️⃣</span><div class="help-text"><strong>框填色</strong>：切換到🪣模式，先選好顏色，再畫範圍，完成後自動填入。</div></div>
-        <div class="help-row"><span class="help-icon">3️⃣</span><div class="help-text"><strong>房間</strong>：新增房間時會自動使用目前選定的顏色。</div></div>
-      </div>
-
       <div class="help-section">
         <h3>⌨️ 快捷鍵</h3>
         <div class="help-row"><span class="help-icon">↩️</span><div class="help-text"><span class="kbd">Ctrl+Z</span> 復原 &nbsp;|&nbsp; <span class="kbd">Ctrl+Y</span> 重做</div></div>
@@ -272,18 +302,7 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
         <div class="help-row"><span class="help-icon">✅</span><div class="help-text"><span class="kbd">Enter</span> 完成框填色</div></div>
         <div class="help-row"><span class="help-icon">❌</span><div class="help-text"><span class="kbd">Esc</span> 取消目前繪製</div></div>
       </div>
-
-      <div class="help-section">
-        <h3>💡 小技巧</h3>
-        <div class="help-row"><span class="help-icon">🔲</span><div class="help-text">開啟<strong>格線吸附</strong>後，所有點擊會自動對齊格線，畫出來的圖更整齊。</div></div>
-        <div class="help-row"><span class="help-icon">📐</span><div class="help-text">選取物件後，右上角<strong>屬性面板</strong>可調整旋轉角度、線條樣式與顏色。</div></div>
-        <div class="help-row"><span class="help-icon">💾</span><div class="help-text">按<strong>存圖</strong>可匯出 2 倍解析度 PNG，適合傳給客戶或存檔。</div></div>
-        <div class="help-row"><span class="help-icon">🧭</span><div class="help-text"><strong>指北針</strong>可自由旋轉，對齊實際朝向。</div></div>
-      </div>
-
-      <div style="text-align:center;margin-top:8px;font-size:0.72rem;color:var(--muted);">
-        by Ethan Chu｜台灣房屋東湖店 🏠
-      </div>
+      <div style="text-align:center;margin-top:8px;font-size:0.72rem;color:var(--muted);">by Ethan Chu｜台灣房屋東湖店 🏠</div>
     </div>
   </div>
 </div>
@@ -307,6 +326,10 @@ let arcStep = 0, arcP1 = null, arcP2 = null, arcPreview = null;
 
 // 多邊形
 let polyPts = [], polyPreviewPt = null;
+
+// 底圖
+let bgImage = null;
+let bgVisible = true;
 
 // ══════════════════════════════════════
 // 初始化
@@ -371,6 +394,76 @@ function cx() { return canvas.getWidth() / 2; }
 function cy() { return canvas.getHeight() / 2; }
 
 // ══════════════════════════════════════
+// 底圖功能 (V3.4 新增)
+// ══════════════════════════════════════
+function loadBgImage(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(f) {
+    // 移除舊底圖
+    if (bgImage) { canvas.remove(bgImage); bgImage = null; }
+    fabric.Image.fromURL(f.target.result, function(img) {
+      // 等比縮放至畫布
+      const scaleX = canvas.getWidth() / img.width;
+      const scaleY = canvas.getHeight() / img.height;
+      const scale = Math.min(scaleX, scaleY, 1); // 不放大，只縮小
+      img.set({
+        left: 0,
+        top: 0,
+        scaleX: scale,
+        scaleY: scale,
+        opacity: parseInt(document.getElementById('bgOpacity').value) / 100,
+        selectable: false,   // ✅ 鎖死，不可選取
+        evented: false,      // ✅ 不接收任何事件
+        hasControls: false,
+        hasBorders: false,
+        name: '__bg_image__' // 識別用
+      });
+      suppressHist = true;
+      canvas.add(img);
+      canvas.sendToBack(img); // 置底
+      suppressHist = false;
+      bgImage = img;
+      bgVisible = true;
+      document.getElementById('bgControls').classList.add('show');
+      document.getElementById('bgVisBtn').textContent = '👁 隱藏底圖';
+      canvas.renderAll();
+      // 清空 file input 讓下次可以重新選同一張
+      e.target.value = '';
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateBgOpacity() {
+  const val = parseInt(document.getElementById('bgOpacity').value);
+  document.getElementById('bgOpacityVal').textContent = val + '%';
+  if (bgImage && bgVisible) {
+    bgImage.set('opacity', val / 100);
+    canvas.renderAll();
+  }
+}
+
+function toggleBgVisibility() {
+  if (!bgImage) return;
+  bgVisible = !bgVisible;
+  bgImage.set('opacity', bgVisible ? parseInt(document.getElementById('bgOpacity').value) / 100 : 0);
+  document.getElementById('bgVisBtn').textContent = bgVisible ? '👁 隱藏底圖' : '👁 顯示底圖';
+  canvas.renderAll();
+}
+
+function removeBg() {
+  if (!bgImage) return;
+  if (!confirm('確定移除底圖？')) return;
+  canvas.remove(bgImage);
+  bgImage = null;
+  bgVisible = true;
+  document.getElementById('bgControls').classList.remove('show');
+  canvas.renderAll();
+}
+
+// ══════════════════════════════════════
 // 滑鼠事件
 // ══════════════════════════════════════
 function onMouseMove(e) {
@@ -404,7 +497,7 @@ function onCanvasClick(e) {
 function handleWall(p, e) {
   const isDash = (mode === 'dash');
   if (!ptStarted) {
-    if (canvas.findTarget(e)) return;
+    // ✅ 因為 setMode 已 discard + 關掉 evented，findTarget 不會誤觸
     ptStarted = true; ptX = p.x; ptY = p.y;
     moveDot('dotStart', p);
     ptPreview = new fabric.Line([p.x, p.y, p.x, p.y], {
@@ -419,7 +512,7 @@ function handleWall(p, e) {
       stroke: isDash ? '#888' : '#1a1a2e', strokeWidth: isDash ? 3 : 6,
       strokeDashArray: isDash ? [8, 6] : [], selectable: true, evented: true
     });
-    canvas.add(line); canvas.setActiveObject(line);
+    canvas.add(line);
     resetPt(); showHint(''); saveHistory();
   }
 }
@@ -430,7 +523,6 @@ function resetPt() { ptStarted = false; ptPreview = null; hideDot('dotStart'); }
 // ══════════════════════════════════════
 function handleArc(p, e) {
   if (arcStep === 0) {
-    if (canvas.findTarget(e)) return;
     arcP1 = p; arcStep = 1; moveDot('dotStart', p);
     arcPreview = new fabric.Line([p.x, p.y, p.x, p.y], { stroke: '#e94560', strokeWidth: 2, strokeDashArray: [4, 3], selectable: false, evented: false, opacity: 0.6 });
     suppressHist = true; canvas.add(arcPreview); suppressHist = false;
@@ -460,7 +552,6 @@ function resetArc() { arcStep = 0; arcP1 = null; arcP2 = null; arcPreview = null
 // 多邊形填色
 // ══════════════════════════════════════
 function handlePoly(p, e) {
-  if (canvas.findTarget(e) && polyPts.length === 0) return;
   if (polyPts.length >= 3) {
     const first = polyPts[0];
     if (Math.hypot(p.x - first.x, p.y - first.y) < 20) { finishPoly(); return; }
@@ -512,15 +603,43 @@ function cancelDraw() {
 }
 
 // ══════════════════════════════════════
-// 模式切換
+// 模式切換 — V3.4 修正：切換時 discard 物件並控制 evented
 // ══════════════════════════════════════
 function setMode(m) {
   cancelDraw(); mode = m;
   document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
   const btn = document.getElementById('btn-' + m); if (btn) btn.classList.add('active');
-  canvas.selection = (m === 'select');
-  canvas.defaultCursor = (m === 'select') ? 'default' : 'crosshair';
-  if (m === 'select') hideDot('dotCursor');
+
+  const isDrawing = (m !== 'select');
+
+  // ✅ Bug Fix: 切換到繪圖模式時，強制取消選取 + 鎖住所有物件
+  // 這樣 fabric 不會把鍵盤方向鍵截走，也不會讓 findTarget 誤觸已選物件
+  if (isDrawing) {
+    canvas.discardActiveObject();
+    canvas.forEachObject(o => {
+      if (o.name !== '__bg_image__') { // 底圖本來就鎖死，不用處理
+        o.selectable = false;
+        o.evented = false;
+      }
+    });
+    canvas.selection = false;
+    canvas.defaultCursor = 'crosshair';
+    document.getElementById('propPanel').style.display = 'none';
+  } else {
+    // 回到選取模式，恢復所有物件可互動
+    canvas.forEachObject(o => {
+      if (o.name !== '__bg_image__') {
+        o.selectable = true;
+        o.evented = true;
+      }
+    });
+    canvas.selection = true;
+    canvas.defaultCursor = 'default';
+    hideDot('dotCursor');
+  }
+
+  canvas.renderAll();
+
   const labels = { select:'選取', wall:'畫實線牆', dash:'畫虛線', arc:'畫弧線', poly:'框填色' };
   document.getElementById('modeLabel').textContent = labels[m] || m;
   const hints = { wall:'點第一個位置', dash:'點第一個位置', arc:'第一點：弧線起點', poly:'點擊畫出範圍，雙擊或點起點完成' };
@@ -549,17 +668,12 @@ function addDimension() {
   canvas.add(g); canvas.setActiveObject(g); if (window.innerWidth<=768) closeSidebar();
 }
 
-// ══════════════════════════════════════
-// 輔助：建立帶 originX/Y center 的物件
-// （在 Group 內用 left/top 設定相對中心位置）
-// ══════════════════════════════════════
 function c(obj) { return Object.assign(obj, { originX:'center', originY:'center' }); }
 
 // ══════════════════════════════════════
-// 物件工廠
+// 物件工廠（與 V3.3 相同）
 // ══════════════════════════════════════
 const OBJS = {
-
   door: () => new fabric.Group([
     new fabric.Line([0,0,0,60],{stroke:'#1a1a2e',strokeWidth:5}),
     new fabric.Line([0,60,60,60],{stroke:'#1a1a2e',strokeWidth:3}),
@@ -590,40 +704,28 @@ const OBJS = {
     return new fabric.Group(items,{left:snap(cx()-50),top:snap(cy()-25)});
   },
 
-  'balcony-semi': () => {
-    // 半圓陽台：平底靠牆在上，弧形向下突出，簡潔版（無放射線）
-    return new fabric.Group([
-      new fabric.Path('M -55 0 A 55 55 0 0 1 55 0', {
-        fill: 'rgba(176,220,245,0.25)', stroke: '#1a1a2e', strokeWidth: 3
-      }),
-      new fabric.Line([-55, 0, 55, 0], { stroke: '#1a1a2e', strokeWidth: 5 })
-    ], { left: snap(cx() - 55), top: snap(cy() - 55) });
-  },
+  'balcony-semi': () => new fabric.Group([
+    new fabric.Path('M -55 0 A 55 55 0 0 1 55 0', {fill:'rgba(176,220,245,0.25)',stroke:'#1a1a2e',strokeWidth:3}),
+    new fabric.Line([-55,0,55,0],{stroke:'#1a1a2e',strokeWidth:5})
+  ],{left:snap(cx()-55),top:snap(cy()-55)}),
 
   pillar: () => new fabric.Group([
     new fabric.Rect({width:30,height:30,fill:'#888',stroke:'#333',strokeWidth:2}),
     new fabric.Rect({left:5,top:5,width:20,height:20,fill:'#aaa'})
   ],{left:snap(cx()-15),top:snap(cy()-15)}),
 
-  // ✅ 指北針 - 全部用 originX/Y:center，座標相對 Group 中心
   compass: () => {
-    const R = 32;
-    const items = [
-      // 外圓
+    const R=32;
+    return new fabric.Group([
       c(new fabric.Circle({radius:R,fill:'white',stroke:'#1a1a2e',strokeWidth:2.5,left:0,top:0})),
-      // 北方黑色實心鑽石
       c(new fabric.Path('M 0 -28 L 8 -5 L 0 -11 L -8 -5 Z',{fill:'#1a1a2e',stroke:'none',left:0,top:0})),
-      // 南方白色空心鑽石
       c(new fabric.Path('M 0 28 L 8 5 L 0 11 L -8 5 Z',{fill:'white',stroke:'#1a1a2e',strokeWidth:1.5,left:0,top:0})),
-      // 中心圓
       c(new fabric.Circle({radius:4,fill:'white',stroke:'#1a1a2e',strokeWidth:1.5,left:0,top:0})),
-      // 文字
       c(new fabric.Text('N',{left:0,top:-(R+12),fontSize:11,fill:'#1a1a2e',fontWeight:'bold',fontFamily:'Arial'})),
       c(new fabric.Text('S',{left:0,top:R+10,fontSize:11,fill:'#1a1a2e',fontFamily:'Arial'})),
       c(new fabric.Text('E',{left:R+10,top:0,fontSize:10,fill:'#1a1a2e',fontFamily:'Arial'})),
       c(new fabric.Text('W',{left:-(R+16),top:0,fontSize:10,fill:'#1a1a2e',fontFamily:'Arial'})),
-    ];
-    return new fabric.Group(items,{left:snap(cx()),top:snap(cy())});
+    ],{left:snap(cx()),top:snap(cy())});
   },
 
   'stair-straight': () => {
@@ -637,10 +739,7 @@ const OBJS = {
     const items=[];
     items.push(c(new fabric.Circle({radius:45,fill:'#e8e8e8',stroke:'#888',strokeWidth:2,left:0,top:0})));
     items.push(c(new fabric.Circle({radius:12,fill:'#bbb',stroke:'#666',strokeWidth:2,left:0,top:0})));
-    for(let i=0;i<8;i++){
-      const a=(i*45)*Math.PI/180;
-      items.push(c(new fabric.Line([12*Math.cos(a),12*Math.sin(a),45*Math.cos(a),45*Math.sin(a)],{stroke:'#999',strokeWidth:1.5,left:0,top:0})));
-    }
+    for(let i=0;i<8;i++){const a=(i*45)*Math.PI/180;items.push(c(new fabric.Line([12*Math.cos(a),12*Math.sin(a),45*Math.cos(a),45*Math.sin(a)],{stroke:'#999',strokeWidth:1.5,left:0,top:0})));}
     items.push(c(new fabric.Text('旋梯',{left:0,top:0,fontSize:10,fill:'#555',fontFamily:'Microsoft JhengHei'})));
     return new fabric.Group(items,{left:snap(cx()),top:snap(cy())});
   },
@@ -681,10 +780,7 @@ const OBJS = {
   stove: () => {
     const mk=(lx,ly)=>new fabric.Circle({radius:12,left:lx,top:ly,fill:'#ccc',stroke:'#888',strokeWidth:1});
     const dt=(lx,ly)=>new fabric.Circle({radius:3,left:lx,top:ly,fill:'#888'});
-    return new fabric.Group([
-      new fabric.Rect({width:70,height:60,fill:'#f0f0f0',stroke:'#888',strokeWidth:2}),
-      mk(8,8),mk(46,8),mk(8,38),mk(46,38),dt(17,17),dt(55,17),dt(17,47),dt(55,47)
-    ],{left:snap(cx()-35),top:snap(cy()-30)});
+    return new fabric.Group([new fabric.Rect({width:70,height:60,fill:'#f0f0f0',stroke:'#888',strokeWidth:2}),mk(8,8),mk(46,8),mk(8,38),mk(46,38),dt(17,17),dt(55,17),dt(17,47),dt(55,47)],{left:snap(cx()-35),top:snap(cy()-30)});
   },
 
   counter: () => new fabric.Group([
@@ -721,22 +817,15 @@ const OBJS = {
     new fabric.Rect({left:98,top:10,width:12,height:50,fill:'#B0C4DE',stroke:'#708090',strokeWidth:1.5,rx:3})
   ],{left:snap(cx()-60),top:snap(cy()-30)}),
 
-  // ✅ 餐桌 - 扁平化，不用 Nested Group，椅子用對稱矩形
   table: () => {
     const RX=50,RY=35,GAP=5,CW=30,CH=20;
-    const items=[
-      // 桌面
+    return new fabric.Group([
       c(new fabric.Ellipse({rx:RX,ry:RY,fill:'#DEB887',stroke:'#8B7355',strokeWidth:2,left:0,top:0})),
-      // 上椅（水平30x20）
       c(new fabric.Rect({width:CW,height:CH,fill:'#f0f0f0',stroke:'#999',strokeWidth:1.5,rx:3,left:0,top:-(RY+GAP+CH/2)})),
-      // 下椅
       c(new fabric.Rect({width:CW,height:CH,fill:'#f0f0f0',stroke:'#999',strokeWidth:1.5,rx:3,left:0,top:RY+GAP+CH/2})),
-      // 左椅（垂直20x30）
       c(new fabric.Rect({width:CH,height:CW,fill:'#f0f0f0',stroke:'#999',strokeWidth:1.5,rx:3,left:-(RX+GAP+CH/2),top:0})),
-      // 右椅
       c(new fabric.Rect({width:CH,height:CW,fill:'#f0f0f0',stroke:'#999',strokeWidth:1.5,rx:3,left:RX+GAP+CH/2,top:0})),
-    ];
-    return new fabric.Group(items,{left:snap(cx()-RX),top:snap(cy()-RY)});
+    ],{left:snap(cx()-RX),top:snap(cy()-RY)});
   },
 
   desk: () => new fabric.Group([
@@ -814,11 +903,15 @@ function setLineStyle(style) {
 // ══════════════════════════════════════
 function deleteSelected() {
   const obj = canvas.getActiveObject(); if (!obj) return;
+  if (obj.name === '__bg_image__') return; // 底圖不可用 delete 刪除
   canvas.remove(obj); saveHistory(); document.getElementById('propPanel').style.display = 'none';
 }
 function clearAll() {
-  if (!confirm('確定清空畫布？')) return;
-  canvas.clear(); canvas.backgroundColor = 'rgba(0,0,0,0)'; canvas.renderAll(); saveHistory();
+  if (!confirm('確定清空畫布？這會連底圖一起清除。')) return;
+  canvas.clear(); canvas.backgroundColor = 'rgba(0,0,0,0)';
+  bgImage = null; bgVisible = true;
+  document.getElementById('bgControls').classList.remove('show');
+  canvas.renderAll(); saveHistory();
 }
 
 // ══════════════════════════════════════
@@ -835,24 +928,48 @@ function toggleGrid() {
 // Undo / Redo
 // ══════════════════════════════════════
 function saveHistory() {
-  const json = JSON.stringify(canvas.toJSON());
+  const json = JSON.stringify(canvas.toJSON(['name','selectable','evented']));
   history = history.slice(0, histIdx + 1); history.push(json); histIdx = history.length - 1; updateStatus();
 }
 function undo() { if (histIdx <= 0) return; histIdx--; loadState(history[histIdx]); }
 function redo() { if (histIdx >= history.length-1) return; histIdx++; loadState(history[histIdx]); }
 function loadState(json) {
-  suppressHist = true; canvas.loadFromJSON(json, () => { canvas.renderAll(); suppressHist = false; updateStatus(); });
+  suppressHist = true;
+  canvas.loadFromJSON(json, () => {
+    // 還原後重新找底圖參考
+    bgImage = canvas.getObjects().find(o => o.name === '__bg_image__') || null;
+    if (bgImage) {
+      document.getElementById('bgControls').classList.add('show');
+    } else {
+      document.getElementById('bgControls').classList.remove('show');
+    }
+    canvas.renderAll(); suppressHist = false; updateStatus();
+  });
 }
 function updateStatus() { document.getElementById('objCount').textContent = canvas.getObjects().length; }
 
 // ══════════════════════════════════════
-// 匯出
+// 匯出 - 自動隱藏底圖再匯出
 // ══════════════════════════════════════
 function exportImg() {
-  canvas.discardActiveObject(); canvas.renderAll();
+  canvas.discardActiveObject();
+  // 匯出時自動隱藏底圖
+  const wasBgVisible = bgVisible;
+  if (bgImage && bgVisible) { bgImage.set('opacity', 0); bgVisible = false; }
+  canvas.renderAll();
+
   const link = document.createElement('a');
   link.download = 'floor_plan_' + Date.now() + '.png';
-  link.href = canvas.toDataURL({ format:'png', multiplier:2 }); link.click();
+  link.href = canvas.toDataURL({ format:'png', multiplier:2 });
+  link.click();
+
+  // 還原底圖
+  if (bgImage && wasBgVisible) {
+    bgImage.set('opacity', parseInt(document.getElementById('bgOpacity').value) / 100);
+    bgVisible = true;
+    document.getElementById('bgVisBtn').textContent = '👁 隱藏底圖';
+    canvas.renderAll();
+  }
 }
 
 // ══════════════════════════════════════
