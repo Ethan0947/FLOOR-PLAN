@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1a1a2e">
-<title>Ethan 格局神器 V3.4</title>
+<title>Ethan 格局神器 V3.5</title>
 <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
 <style>
 :root{--bg:#1a1a2e;--sidebar:#16213e;--panel:#0f3460;--accent:#e94560;--accent2:#f5a623;--text:#eaeaea;--muted:#8892a4;--border:#2a2a4a;--btn:#1e2a45;--btn-hover:#2a3a5a;--green:#2ecc71;--radius:10px;}
@@ -85,6 +85,154 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
 .line-btn{flex:1;padding:5px;background:var(--btn);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;font-size:0.7rem;text-align:center;}
 .line-btn.active{background:var(--accent);border-color:var(--accent);}
 
+/* ── 圖層面板 - 獨立浮動視窗 ── */
+.layer-panel{
+  position:fixed;
+  top:80px;
+  right:20px;
+  width:240px;
+  max-height:70vh;
+  background:var(--sidebar);
+  border:1px solid var(--border);
+  border-radius:12px;
+  display:none;
+  flex-direction:column;
+  z-index:2000;
+  box-shadow:0 12px 40px rgba(0,0,0,0.5);
+  overflow:hidden;
+  /* 讓面板可以被拖移 */
+  user-select:none;
+}
+.layer-panel.open{display:flex;}
+.layer-header{
+  padding:10px 12px;
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-shrink:0;
+  cursor:move; /* 拖移手勢 */
+}
+.layer-header-left{display:flex;align-items:center;gap:8px;}
+.layer-header h4{font-size:0.8rem;color:var(--accent2);font-weight:700;margin:0;}
+.layer-count{font-size:0.65rem;background:rgba(245,166,35,0.2);color:var(--accent2);padding:1px 7px;border-radius:10px;}
+.layer-header-right{display:flex;align-items:center;gap:6px;}
+.layer-header-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem;padding:3px 6px;border-radius:4px;transition:all 0.15s;}
+.layer-header-btn:hover{background:var(--btn-hover);color:var(--text);}
+.layer-toolbar{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  padding:6px 10px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  background:rgba(0,0,0,0.1);
+}
+.layer-tb-btn{
+  flex:1;
+  padding:5px 4px;
+  background:var(--btn);
+  border:1px solid var(--border);
+  border-radius:6px;
+  color:var(--muted);
+  font-size:0.68rem;
+  cursor:pointer;
+  text-align:center;
+  transition:all 0.15s;
+  display:flex;align-items:center;justify-content:center;gap:3px;
+}
+.layer-tb-btn:hover{background:var(--btn-hover);color:var(--text);}
+.layer-tb-btn:disabled{opacity:0.35;cursor:not-allowed;}
+.layer-list{
+  overflow-y:auto;
+  flex:1;
+  padding:5px;
+}
+.layer-list::-webkit-scrollbar{width:4px;}
+.layer-list::-webkit-scrollbar-track{background:transparent;}
+.layer-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.layer-item{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 8px;
+  border-radius:7px;
+  cursor:pointer;
+  border:1.5px solid transparent;
+  margin-bottom:2px;
+  transition:all 0.12s;
+  position:relative;
+}
+.layer-item:hover{background:var(--btn-hover);}
+.layer-item.selected{background:rgba(233,69,96,0.15);border-color:var(--accent);}
+.layer-item.drag-over{border-color:var(--accent2);background:rgba(245,166,35,0.1);}
+.layer-item.dragging{opacity:0.35;}
+.layer-drag-handle{
+  color:var(--muted);
+  font-size:0.75rem;
+  cursor:grab;
+  flex-shrink:0;
+  padding:0 2px;
+  line-height:1;
+}
+.layer-drag-handle:active{cursor:grabbing;}
+.layer-thumb{
+  width:28px;height:28px;
+  border-radius:5px;
+  background:var(--btn);
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.9rem;
+  flex-shrink:0;
+}
+.layer-info{flex:1;overflow:hidden;}
+.layer-name{font-size:0.72rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
+.layer-type{font-size:0.6rem;color:var(--muted);line-height:1;}
+.layer-vis-btn{
+  background:none;border:none;cursor:pointer;
+  color:var(--muted);font-size:0.8rem;
+  padding:2px 3px;border-radius:3px;
+  opacity:0;transition:all 0.15s;flex-shrink:0;
+}
+.layer-item:hover .layer-vis-btn{opacity:1;}
+.layer-item.selected .layer-vis-btn{opacity:1;}
+.layer-vis-btn:hover{color:var(--text);background:var(--btn);}
+.layer-empty{font-size:0.72rem;color:var(--muted);text-align:center;padding:24px 10px;line-height:1.8;}
+.layer-footer{
+  padding:6px 10px;
+  border-top:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-shrink:0;
+  background:rgba(0,0,0,0.1);
+}
+.layer-footer-hint{font-size:0.6rem;color:var(--muted);}
+.layer-shortcut{font-size:0.6rem;color:var(--muted);background:var(--btn);padding:1px 5px;border-radius:3px;border:1px solid var(--border);}
+
+/* 圖層開關按鈕（在canvas右下角） */
+.layer-toggle-fab{
+  position:absolute;
+  bottom:50px;
+  right:16px;
+  z-index:1200;
+  width:42px;height:42px;
+  border-radius:12px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  color:var(--accent2);
+  font-size:1rem;
+  cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1px;
+  box-shadow:0 4px 16px rgba(0,0,0,0.4);
+  transition:all 0.2s;
+}
+.layer-toggle-fab:hover{background:var(--btn-hover);transform:scale(1.05);}
+.layer-toggle-fab.active{background:var(--accent);border-color:var(--accent);color:white;}
+.layer-toggle-fab span{font-size:0.5rem;font-weight:700;letter-spacing:0.5px;}
+
 /* ── 底圖控制 ── */
 .bg-upload-btn{width:100%;padding:8px;background:var(--panel);border:1px dashed var(--accent2);border-radius:var(--radius);color:var(--accent2);font-size:0.75rem;font-weight:700;cursor:pointer;text-align:center;transition:all 0.15s;margin-bottom:7px;}
 .bg-upload-btn:hover{background:var(--btn-hover);}
@@ -121,7 +269,7 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <div><div class="logo">格局神器</div><div style="font-size:0.63rem;color:var(--muted);margin-top:1px;">Ethan Floor Plan Tool</div></div>
-    <span class="version">V3.4</span>
+    <span class="version">V3.5</span>
   </div>
 
   <div class="section">
@@ -247,7 +395,7 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
     </button>
   </div>
 
-  <div style="padding:0 12px 10px;font-size:0.63rem;color:var(--muted);text-align:center;">Ctrl+Z 復原 · Ctrl+C/V 複製貼上 · Ctrl+D 快速複製 · Del 刪除 · Esc 取消</div>
+  <div style="padding:0 12px 10px;font-size:0.63rem;color:var(--muted);text-align:center;">Ctrl+Z 復原 · Ctrl+C/V 複製貼上 · Ctrl+D 快速複製 · Del 刪除 · Alt+1 圖層 · Esc 取消</div>
 </div>
 
 <!-- ── CANVAS AREA ── -->
@@ -260,6 +408,34 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
   <div class="hint-bar" id="hintBar"></div>
   <div class="statusbar">模式：<span id="modeLabel">選取</span> ｜ 物件：<span id="objCount">0</span></div>
   <button class="help-btn" onclick="openHelp()" title="使用說明">？</button>
+  <!-- 圖層 FAB 按鈕 - 右下角常駐 -->
+  <button class="layer-toggle-fab" id="layerFab" onclick="toggleLayerPanel()" title="圖層面板 (Alt+1)">
+    🗂️<span>圖層</span>
+  </button>
+</div>
+
+<!-- ── 圖層面板 - 獨立浮動視窗 ── -->
+<div class="layer-panel" id="layerPanel">
+  <div class="layer-header" id="layerPanelHeader">
+    <div class="layer-header-left">
+      <h4>🗂️ 圖層</h4>
+      <span class="layer-count" id="layerCount">0</span>
+    </div>
+    <div class="layer-header-right">
+      <button class="layer-header-btn" onclick="toggleLayerPanel()" title="關閉">✕</button>
+    </div>
+  </div>
+  <div class="layer-toolbar">
+    <button class="layer-tb-btn" onclick="layerToTop()" title="移到最頂層">⬆ 頂</button>
+    <button class="layer-tb-btn" onclick="layerMoveUp_selected()" title="上移一層">↑ 上</button>
+    <button class="layer-tb-btn" onclick="layerMoveDown_selected()" title="下移一層">↓ 下</button>
+    <button class="layer-tb-btn" onclick="layerToBottom()" title="移到最底層">⬇ 底</button>
+  </div>
+  <div class="layer-list" id="layerList"></div>
+  <div class="layer-footer">
+    <span class="layer-footer-hint">拖移排序 · 點選選取</span>
+    <span class="layer-shortcut">Alt+1</span>
+  </div>
 </div>
 
 <!-- ── 屬性面板 ── -->
@@ -296,7 +472,13 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
         <div class="help-row"><span class="help-icon">📐</span><div class="help-text"><strong>使用方式</strong>：上傳後切換「實線牆」模式，沿著底圖邊緣描繪，再加上標尺和文字標籤。</div></div>
       </div>
       <div class="help-section">
-        <h3>✏️ 繪圖模式</h3>
+        <h3>🗂️ 圖層面板（V3.5 新增）</h3>
+        <div class="help-row"><span class="help-icon">⌨️</span><div class="help-text"><span class="kbd">Alt+1</span> 開關圖層面板，顯示所有物件的堆疊順序。</div></div>
+        <div class="help-row"><span class="help-icon">⠿</span><div class="help-text"><strong>拖移排序</strong>：抓住左側 ⠿ 符號拖移，即可調整圖層上下順序。頂層物件顯示在最上方。</div></div>
+        <div class="help-row"><span class="help-icon">↑↓</span><div class="help-text"><strong>上移/下移按鈕</strong>：點 ↑↓ 每次移動一層，快速調整順序。</div></div>
+        <div class="help-row"><span class="help-icon">👆</span><div class="help-text"><strong>點選選取</strong>：在圖層面板點擊任一物件，畫布上會同步選取該物件，方便找到被遮住的元素。</div></div>
+        <div class="help-row"><span class="help-icon">🔒</span><div class="help-text"><strong>底圖鎖定</strong>：底圖永遠在最底層，不可拖移，避免誤操作。</div></div>
+      </div>
         <div class="help-row"><span class="help-icon">✋</span><div class="help-text"><strong>選取</strong>：點擊物件選取，可拖移、縮放、旋轉。</div></div>
         <div class="help-row"><span class="help-icon">➖</span><div class="help-text"><strong>實線牆</strong>：點第一個位置設起點（橘點出現），再點第二個位置完成。切換此模式時自動取消選取，不再有方向鍵衝突。</div></div>
         <div class="help-row"><span class="help-icon">┄</span><div class="help-text"><strong>虛線</strong>：同畫牆，用於標示陽台外推、平台外移等。</div></div>
@@ -365,8 +547,11 @@ window.onload = () => {
   canvas.on('selection:updated', showProp);
   canvas.on('selection:cleared', () => { document.getElementById('propPanel').style.display = 'none'; });
   canvas.on('object:modified', saveHistory);
-  canvas.on('object:added', () => { if (!suppressHist) saveHistory(); updateStatus(); });
-  canvas.on('object:removed', updateStatus);
+  canvas.on('object:added', () => { if (!suppressHist) saveHistory(); updateStatus(); refreshLayerPanel(); });
+  canvas.on('object:removed', () => { updateStatus(); refreshLayerPanel(); });
+  canvas.on('selection:created', () => { refreshLayerPanel(); });
+  canvas.on('selection:updated', () => { refreshLayerPanel(); });
+  canvas.on('selection:cleared', () => { refreshLayerPanel(); });
 
   // ✅ 快捷鍵終極修法：
   // 問題根本：Fabric.js 有隱藏 <textarea> 會搶走 focus，
@@ -404,6 +589,7 @@ window.onload = () => {
     else if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
     else if (e.key === 'Escape') cancelDraw();
     else if (e.key === 'Enter' && mode === 'poly') finishPoly();
+    else if (e.altKey && e.key === '1') toggleLayerPanel();
   }, true); // capture phase，永遠最先執行
 
   window.addEventListener('resize', () => {
@@ -888,6 +1074,225 @@ function addObj(type) {
   const fn = OBJS[type]; if (!fn) return;
   canvas.add(fn()); canvas.setActiveObject(canvas.item(canvas.size()-1));
   if (window.innerWidth<=768) closeSidebar();
+}
+
+// ══════════════════════════════════════
+// 圖層面板 (V3.5)
+// ══════════════════════════════════════
+let layerDragSrc = null;
+let layerPanelDragging = false;
+let layerPanelDragOffX = 0, layerPanelDragOffY = 0;
+
+function toggleLayerPanel() {
+  const panel = document.getElementById('layerPanel');
+  const fab = document.getElementById('layerFab');
+  const isOpen = panel.classList.toggle('open');
+  fab.classList.toggle('active', isOpen);
+  if (isOpen) {
+    refreshLayerPanel();
+    initLayerPanelDrag();
+  }
+}
+
+// 讓圖層面板可以被拖移
+function initLayerPanelDrag() {
+  const panel = document.getElementById('layerPanel');
+  const header = document.getElementById('layerPanelHeader');
+  if (header._dragInit) return;
+  header._dragInit = true;
+
+  header.addEventListener('mousedown', (e) => {
+    if (e.target.closest('button')) return;
+    layerPanelDragging = true;
+    const rect = panel.getBoundingClientRect();
+    layerPanelDragOffX = e.clientX - rect.left;
+    layerPanelDragOffY = e.clientY - rect.top;
+    panel.style.transition = 'none';
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!layerPanelDragging) return;
+    const x = e.clientX - layerPanelDragOffX;
+    const y = e.clientY - layerPanelDragOffY;
+    // 限制不超出視窗
+    const maxX = window.innerWidth - panel.offsetWidth;
+    const maxY = window.innerHeight - panel.offsetHeight;
+    panel.style.left = Math.max(0, Math.min(x, maxX)) + 'px';
+    panel.style.top = Math.max(0, Math.min(y, maxY)) + 'px';
+    panel.style.right = 'auto';
+  });
+  window.addEventListener('mouseup', () => {
+    layerPanelDragging = false;
+    panel.style.transition = '';
+  });
+}
+
+function getObjIcon(obj) {
+  if (obj.name === '__bg_image__') return '🖼️';
+  const t = obj.type;
+  if (t === 'i-text' || t === 'textbox') return '📝';
+  if (t === 'line') return obj.strokeDashArray?.length ? '┄' : '➖';
+  if (t === 'path') return '〜';
+  if (t === 'polygon') return '🪣';
+  if (t === 'rect') return '⬜';
+  if (t === 'group') return '📦';
+  if (t === 'image') return '🖼️';
+  return '◻️';
+}
+
+function getObjTypeName(obj) {
+  if (obj.name === '__bg_image__') return '底圖';
+  const t = obj.type;
+  if (t === 'i-text' || t === 'textbox') return '文字';
+  if (t === 'line') return obj.strokeDashArray?.length ? '虛線' : '實線牆';
+  if (t === 'path') return '弧線';
+  if (t === 'polygon') return '填色區域';
+  if (t === 'rect') return '房間';
+  if (t === 'group') return '元件';
+  if (t === 'image') return '圖片';
+  return '物件';
+}
+
+function getObjDisplayName(obj, idx) {
+  if (obj.name === '__bg_image__') return '底圖（鎖定）';
+  if ((obj.type === 'i-text' || obj.type === 'textbox') && obj.text) {
+    const txt = obj.text.slice(0, 12);
+    return txt.length < obj.text.length ? txt + '…' : txt;
+  }
+  return `${getObjTypeName(obj)} ${idx + 1}`;
+}
+
+function refreshLayerPanel() {
+  const panel = document.getElementById('layerPanel');
+  if (!panel.classList.contains('open')) return;
+
+  const list = document.getElementById('layerList');
+  const countEl = document.getElementById('layerCount');
+  const objs = canvas.getObjects();
+  const activeObj = canvas.getActiveObject();
+
+  // 更新計數（不算底圖）
+  const realCount = objs.filter(o => o.name !== '__bg_image__').length;
+  countEl.textContent = realCount;
+
+  if (objs.length === 0) {
+    list.innerHTML = '<div class="layer-empty">📭 畫布上還沒有物件<br><span style="font-size:0.6rem">開始繪製後這裡會顯示圖層</span></div>';
+    return;
+  }
+
+  // 頂層顯示在最上方
+  const reversed = [...objs].reverse();
+  list.innerHTML = '';
+
+  reversed.forEach((obj) => {
+    const realIdx = objs.indexOf(obj);
+    const isSelected = obj === activeObj;
+    const isBg = obj.name === '__bg_image__';
+
+    const item = document.createElement('div');
+    item.className = 'layer-item' + (isSelected ? ' selected' : '');
+    item.dataset.realIdx = realIdx;
+    item.draggable = !isBg;
+
+    item.innerHTML = `
+      <span class="layer-drag-handle" title="${isBg ? '鎖定' : '拖移排序'}">${isBg ? '🔒' : '⠿'}</span>
+      <div class="layer-thumb">${getObjIcon(obj)}</div>
+      <div class="layer-info">
+        <div class="layer-name">${getObjDisplayName(obj, realIdx)}</div>
+        <div class="layer-type">${getObjTypeName(obj)}</div>
+      </div>
+      ${!isBg ? `<button class="layer-vis-btn" title="刪除此物件" onclick="layerDeleteObj(${realIdx})">🗑</button>` : ''}
+    `;
+
+    // 點擊選取
+    item.addEventListener('click', (e) => {
+      if (e.target.closest('.layer-vis-btn')) return;
+      if (!isBg) {
+        setMode('select');
+        canvas.setActiveObject(obj);
+        canvas.renderAll();
+        showProp();
+        refreshLayerPanel();
+      }
+    });
+
+    // 拖移排序
+    if (!isBg) {
+      item.addEventListener('dragstart', (e) => {
+        layerDragSrc = realIdx;
+        setTimeout(() => item.classList.add('dragging'), 0);
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      item.addEventListener('dragend', () => {
+        item.classList.remove('dragging');
+        document.querySelectorAll('.layer-item').forEach(el => el.classList.remove('drag-over'));
+      });
+      item.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        document.querySelectorAll('.layer-item').forEach(el => el.classList.remove('drag-over'));
+        if (layerDragSrc !== realIdx) item.classList.add('drag-over');
+      });
+      item.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (layerDragSrc === null || layerDragSrc === realIdx) return;
+        canvas.moveTo(objs[layerDragSrc], realIdx);
+        canvas.renderAll();
+        saveHistory();
+        refreshLayerPanel();
+        layerDragSrc = null;
+      });
+    }
+
+    list.appendChild(item);
+  });
+}
+
+function layerDeleteObj(realIdx) {
+  const objs = canvas.getObjects();
+  if (!objs[realIdx]) return;
+  canvas.remove(objs[realIdx]);
+  canvas.renderAll();
+  saveHistory();
+  refreshLayerPanel();
+}
+
+function layerMoveUp(realIdx) {
+  const objs = canvas.getObjects();
+  if (realIdx >= objs.length - 1) return;
+  canvas.moveTo(objs[realIdx], realIdx + 1);
+  canvas.renderAll(); saveHistory(); refreshLayerPanel();
+}
+
+function layerMoveDown(realIdx) {
+  const objs = canvas.getObjects();
+  const bgIdx = objs.findIndex(o => o.name === '__bg_image__');
+  const minIdx = bgIdx >= 0 ? bgIdx + 1 : 0;
+  if (realIdx <= minIdx) return;
+  canvas.moveTo(objs[realIdx], realIdx - 1);
+  canvas.renderAll(); saveHistory(); refreshLayerPanel();
+}
+
+// 對選取物件操作的版本（工具列按鈕用）
+function layerMoveUp_selected() {
+  const obj = canvas.getActiveObject(); if (!obj) return;
+  const objs = canvas.getObjects();
+  layerMoveUp(objs.indexOf(obj));
+}
+function layerMoveDown_selected() {
+  const obj = canvas.getActiveObject(); if (!obj) return;
+  const objs = canvas.getObjects();
+  layerMoveDown(objs.indexOf(obj));
+}
+function layerToTop() {
+  const obj = canvas.getActiveObject(); if (!obj || obj.name === '__bg_image__') return;
+  canvas.bringToFront(obj); canvas.renderAll(); saveHistory(); refreshLayerPanel();
+}
+function layerToBottom() {
+  const obj = canvas.getActiveObject(); if (!obj || obj.name === '__bg_image__') return;
+  const objs = canvas.getObjects();
+  const bgIdx = objs.findIndex(o => o.name === '__bg_image__');
+  const targetIdx = bgIdx >= 0 ? bgIdx + 1 : 0;
+  canvas.moveTo(obj, targetIdx); canvas.renderAll(); saveHistory(); refreshLayerPanel();
 }
 
 // ══════════════════════════════════════
