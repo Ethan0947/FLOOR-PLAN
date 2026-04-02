@@ -239,7 +239,7 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
     <button class="act-btn clear" onclick="clearAll()">🗑️ 清空</button>
     <button class="act-btn export" onclick="exportImg()">💾 存圖</button>
   </div>
-  <div style="padding:0 12px 10px;font-size:0.63rem;color:var(--muted);text-align:center;">Ctrl+Z 復原 · Del 刪除 · Esc 取消</div>
+  <div style="padding:0 12px 10px;font-size:0.63rem;color:var(--muted);text-align:center;">Ctrl+Z 復原 · Ctrl+C/V 複製貼上 · Ctrl+D 快速複製 · Del 刪除 · Esc 取消</div>
 </div>
 
 <!-- ── CANVAS AREA ── -->
@@ -298,6 +298,8 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
       <div class="help-section">
         <h3>⌨️ 快捷鍵</h3>
         <div class="help-row"><span class="help-icon">↩️</span><div class="help-text"><span class="kbd">Ctrl+Z</span> 復原 &nbsp;|&nbsp; <span class="kbd">Ctrl+Y</span> 重做</div></div>
+        <div class="help-row"><span class="help-icon">📋</span><div class="help-text"><span class="kbd">Ctrl+C</span> 複製選取物件 &nbsp;|&nbsp; <span class="kbd">Ctrl+V</span> 貼上</div></div>
+        <div class="help-row"><span class="help-icon">⧉</span><div class="help-text"><span class="kbd">Ctrl+D</span> 快速複製並偏移（不需先複製）</div></div>
         <div class="help-row"><span class="help-icon">🗑️</span><div class="help-text"><span class="kbd">Delete</span> / <span class="kbd">Backspace</span> 刪除選取物件</div></div>
         <div class="help-row"><span class="help-icon">✅</span><div class="help-text"><span class="kbd">Enter</span> 完成框填色</div></div>
         <div class="help-row"><span class="help-icon">❌</span><div class="help-text"><span class="kbd">Esc</span> 取消目前繪製</div></div>
@@ -331,6 +333,9 @@ let polyPts = [], polyPreviewPt = null;
 let bgImage = null;
 let bgVisible = true;
 
+// 複製貼上
+let clipboard = null;
+
 // ══════════════════════════════════════
 // 初始化
 // ══════════════════════════════════════
@@ -355,14 +360,27 @@ window.onload = () => {
   canvas.on('object:added', () => { if (!suppressHist) saveHistory(); updateStatus(); });
   canvas.on('object:removed', updateStatus);
 
-  document.addEventListener('keydown', e => {
-    if (e.target.tagName === 'INPUT') return;
+  // ✅ 快捷鍵修正說明：
+  // 1. 用 window + useCapture:true 確保在 Fabric.js canvas 搶走 focus 後仍能攔截事件
+  // 2. 全部加 e.preventDefault() 防止瀏覽器預設行為干擾（如 Ctrl+Z 觸發瀏覽器undo）
+  // 3. INPUT/TEXTAREA 裡不攔截，讓使用者能正常輸入
+  window.addEventListener('keydown', e => {
+    const tag = e.target.tagName;
+    const isTyping = (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable);
+    // 在文字輸入框時，只攔截 Esc，其他全放行
+    if (isTyping) {
+      if (e.key === 'Escape') { e.preventDefault(); cancelDraw(); }
+      return;
+    }
     if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); }
-    if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
-    if (e.key === 'Escape') cancelDraw();
-    if (e.key === 'Enter' && mode === 'poly') finishPoly();
-  });
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) { e.preventDefault(); redo(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'c') { e.preventDefault(); copySelected(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'v') { e.preventDefault(); pasteClipboard(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'd') { e.preventDefault(); duplicateSelected(); }
+    if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteSelected(); }
+    if (e.key === 'Escape') { e.preventDefault(); cancelDraw(); }
+    if (e.key === 'Enter' && mode === 'poly') { e.preventDefault(); finishPoly(); }
+  }, true); // ← true = capture phase，比 Fabric 更早攔截
 
   window.addEventListener('resize', () => {
     canvas.setWidth(wrap.clientWidth); canvas.setHeight(wrap.clientHeight);
@@ -849,8 +867,62 @@ function addObj(type) {
 }
 
 // ══════════════════════════════════════
-// 填色
+// 複製 / 貼上 / 複製物件 (V3.4 新增)
 // ══════════════════════════════════════
+function copySelected() {
+  const obj = canvas.getActiveObject();
+  if (!obj || obj.name === '__bg_image__') return;
+  obj.clone(cloned => {
+    clipboard = cloned;
+    showHint('已複製！按 Ctrl+V 貼上');
+    setTimeout(() => showHint(''), 1500);
+  });
+}
+
+function pasteClipboard() {
+  if (!clipboard) return;
+  clipboard.clone(cloned => {
+    canvas.discardActiveObject();
+    cloned.set({
+      left: (cloned.left || 0) + 20,
+      top: (cloned.top || 0) + 20,
+      evented: true,
+      selectable: true
+    });
+    if (cloned.type === 'activeSelection') {
+      // 多選貼上
+      cloned.canvas = canvas;
+      cloned.forEachObject(obj => canvas.add(obj));
+      cloned.setCoords();
+    } else {
+      canvas.add(cloned);
+    }
+    // 下次再貼會再偏移20px
+    clipboard.set({
+      left: (clipboard.left || 0) + 20,
+      top: (clipboard.top || 0) + 20
+    });
+    canvas.setActiveObject(cloned);
+    canvas.requestRenderAll();
+    saveHistory();
+  });
+}
+
+function duplicateSelected() {
+  const obj = canvas.getActiveObject();
+  if (!obj || obj.name === '__bg_image__') return;
+  obj.clone(cloned => {
+    cloned.set({ left: (obj.left || 0) + 20, top: (obj.top || 0) + 20, evented: true, selectable: true });
+    canvas.add(cloned);
+    canvas.setActiveObject(cloned);
+    canvas.requestRenderAll();
+    saveHistory();
+    showHint('已複製物件');
+    setTimeout(() => showHint(''), 1200);
+  });
+}
+
+
 function pickColor(el) {
   document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
   el.classList.add('active'); currentColor = el.dataset.color;
