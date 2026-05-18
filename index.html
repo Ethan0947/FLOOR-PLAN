@@ -39,7 +39,7 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
 .act-btn.redo{background:var(--btn);color:var(--text);border:1px solid var(--border);}
 .act-btn.clear{background:#3a1a2a;color:var(--accent);border:1px solid var(--accent);}
 .act-btn.export{background:var(--green);color:white;}
-.canvas-wrap{flex:1;position:relative;background:#f5f0e8;background-image:linear-gradient(rgba(100,100,200,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(100,100,200,0.05) 1px,transparent 1px),linear-gradient(rgba(100,100,200,0.13) 1px,transparent 1px),linear-gradient(90deg,rgba(100,100,200,0.13) 1px,transparent 1px);background-size:10px 10px,10px 10px,40px 40px,40px 40px;overflow:hidden;}
+.canvas-wrap{flex:1;position:relative;background:#f5f0e8;background-image:linear-gradient(rgba(100,100,200,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(100,100,200,0.05) 1px,transparent 1px),linear-gradient(rgba(100,100,200,0.13) 1px,transparent 1px),linear-gradient(90deg,rgba(100,100,200,0.13) 1px,transparent 1px);background-size:5px 5px,5px 5px,20px 20px,20px 20px;overflow:hidden;}
 #mainCanvas{display:block;}
 #polyPreviewCanvas{position:absolute;top:0;left:0;pointer-events:none;z-index:50;}
 .dot-marker{position:absolute;width:10px;height:10px;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:101;display:none;}
@@ -507,7 +507,7 @@ let canvas, previewCtx;
 let mode = 'select';
 let snapOn = true, gridOn = true;
 let history = [], histIdx = -1, suppressHist = false;
-const GRID = 10;
+const GRID = 5;
 let currentColor = '#FAFAFA';
 
 // 點對點
@@ -584,11 +584,11 @@ window.onload = () => {
 
     // 情況三：正常狀態，執行快捷鍵
     e.preventDefault(); // 全部阻擋瀏覽器預設（避免 Ctrl+Z 觸發瀏覽器 undo 等）
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') undo();
-    else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) redo();
-    else if ((e.ctrlKey || e.metaKey) && e.key === 'c') copySelected();
-    else if ((e.ctrlKey || e.metaKey) && e.key === 'v') pasteClipboard();
-    else if ((e.ctrlKey || e.metaKey) && e.key === 'd') duplicateSelected();
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') undo();
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') redo();
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') copySelected();
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') pasteClipboard();
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') duplicateSelected();
     else if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
     else if (e.key === 'Escape') cancelDraw();
     else if (e.key === 'Enter' && mode === 'poly') finishPoly();
@@ -1164,6 +1164,7 @@ function getObjDisplayName(obj, idx) {
     const txt = obj.text.slice(0, 12);
     return txt.length < obj.text.length ? txt + '…' : txt;
   }
+  if (obj.name) return obj.name;
   return `${getObjTypeName(obj)} ${idx + 1}`;
 }
 
@@ -1410,7 +1411,14 @@ function showProp() {
 function closeProp() { document.getElementById('propPanel').style.display = 'none'; }
 function updateLabel() {
   const obj = canvas.getActiveObject(); if (!obj) return;
-  if (obj.type === 'i-text') { obj.set('text', document.getElementById('propLabel').value); canvas.renderAll(); }
+  const val = document.getElementById('propLabel').value;
+  if (obj.type === 'i-text' || obj.type === 'textbox') {
+    obj.set('text', val);
+  } else {
+    obj.name = val;
+  }
+  canvas.renderAll();
+  refreshLayerPanel();
 }
 function updateAngle() {
   const obj = canvas.getActiveObject(); if (!obj) return;
@@ -1463,7 +1471,7 @@ function toggleGrid() {
   const wrap = document.getElementById('canvasWrap');
   if (gridOn) {
     wrap.style.backgroundImage = 'linear-gradient(rgba(100,100,200,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(100,100,200,0.05) 1px,transparent 1px),linear-gradient(rgba(100,100,200,0.13) 1px,transparent 1px),linear-gradient(90deg,rgba(100,100,200,0.13) 1px,transparent 1px)';
-    wrap.style.backgroundSize = '10px 10px,10px 10px,40px 40px,40px 40px';
+    wrap.style.backgroundSize = '5px 5px,5px 5px,20px 20px,20px 20px';
   } else {
     wrap.style.backgroundImage = 'none';
     wrap.style.backgroundSize = '';
