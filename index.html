@@ -301,6 +301,9 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
         <button class="bg-btn" onclick="toggleBgVisibility()" id="bgVisBtn">👁 隱藏底圖</button>
         <button class="bg-btn danger" onclick="removeBg()">🗑 移除底圖</button>
       </div>
+      <div class="bg-btn-row" style="margin-top:4px;">
+        <button class="bg-btn" onclick="toggleBgLock()" id="bgLockBtn" style="width:100%;">📐 解鎖底圖（可旋轉縮放）</button>
+      </div>
       <div style="font-size:0.62rem;color:var(--muted);margin-top:5px;">💡 存圖前點「隱藏底圖」，匯出結果更乾淨</div>
     </div>
   </div>
@@ -523,6 +526,10 @@ let polyPts = [], polyPreviewPt = null;
 let bgImage = null;
 let bgVisible = true;
 
+// 端點編輯 handles
+let nodeHandles = [];
+let nodeEditLine = null;
+
 // 複製貼上
 let clipboard = null;
 
@@ -543,15 +550,26 @@ window.onload = () => {
   canvas.upperCanvasEl.addEventListener('click', onCanvasClick);
   canvas.upperCanvasEl.addEventListener('dblclick', () => { if (mode === 'poly') finishPoly(); });
 
-  canvas.on('selection:created', showProp);
-  canvas.on('selection:updated', showProp);
-  canvas.on('selection:cleared', () => { document.getElementById('propPanel').style.display = 'none'; });
-  canvas.on('object:modified', saveHistory);
+  canvas.on('selection:created', e => { const o = canvas.getActiveObject(); if (o && o.type === 'line' && !o._isHandle) showLineHandles(o); else if (!o || !o._isHandle) clearLineHandles(); showProp(); refreshLayerPanel(); });
+  canvas.on('selection:updated', e => { const o = canvas.getActiveObject(); if (o && o.type === 'line' && !o._isHandle) showLineHandles(o); else if (!o || !o._isHandle) clearLineHandles(); showProp(); refreshLayerPanel(); });
+  canvas.on('selection:cleared', () => { clearLineHandles(); document.getElementById('propPanel').style.display = 'none'; refreshLayerPanel(); });
+  canvas.on('object:modified', e => { if (!e.target._isHandle) saveHistory(); });
   canvas.on('object:added', () => { if (!suppressHist) saveHistory(); updateStatus(); refreshLayerPanel(); });
   canvas.on('object:removed', () => { updateStatus(); refreshLayerPanel(); });
-  canvas.on('selection:created', () => { refreshLayerPanel(); });
-  canvas.on('selection:updated', () => { refreshLayerPanel(); });
-  canvas.on('selection:cleared', () => { refreshLayerPanel(); });
+  canvas.on('object:moving', e => {
+    const o = e.target;
+    if (o._isHandle && o._parentLine) {
+      const nx = snap(o.left), ny = snap(o.top);
+      o.left = nx; o.top = ny;
+      setLineEndpoint(o._parentLine, o._handleIdx, nx, ny);
+    } else if (o.type === 'line' && o === nodeEditLine) {
+      const { p1, p2 } = getAbsEndpoints(o);
+      if (nodeHandles[0]) { nodeHandles[0].left = p1.x; nodeHandles[0].top = p1.y; nodeHandles[0].setCoords(); }
+      if (nodeHandles[1]) { nodeHandles[1].left = p2.x; nodeHandles[1].top = p2.y; nodeHandles[1].setCoords(); }
+      canvas.renderAll();
+    }
+  });
+  canvas.on('object:modified', e => { if (e.target._isHandle) { saveHistory(); } });
 
   // ✅ 快捷鍵終極修法：
   // 問題根本：Fabric.js 有隱藏 <textarea> 會搶走 focus，
@@ -624,6 +642,62 @@ function showHint(msg) {
 function cx() { return canvas.getWidth() / 2; }
 function cy() { return canvas.getHeight() / 2; }
 
+function getAbsEndpoints(line) {
+  const cx = (line.x1 + line.x2) / 2, cy = (line.y1 + line.y2) / 2;
+  const cos = Math.cos(fabric.util.degreesToRadians(line.angle || 0));
+  const sin = Math.sin(fabric.util.degreesToRadians(line.angle || 0));
+  const sx = line.scaleX || 1, sy = line.scaleY || 1;
+  function tr(x, y) {
+    const dx = (x - cx) * sx, dy = (y - cy) * sy;
+    return { x: line.left + dx * cos - dy * sin, y: line.top + dx * sin + dy * cos };
+  }
+  return { p1: tr(line.x1, line.y1), p2: tr(line.x2, line.y2) };
+}
+
+function setLineEndpoint(line, idx, nx, ny) {
+  const { p1, p2 } = getAbsEndpoints(line);
+  const np1 = idx === 1 ? { x: nx, y: ny } : p1;
+  const np2 = idx === 2 ? { x: nx, y: ny } : p2;
+  line.set({ x1: np1.x, y1: np1.y, x2: np2.x, y2: np2.y,
+    left: (np1.x + np2.x) / 2, top: (np1.y + np2.y) / 2,
+    width: Math.abs(np2.x - np1.x), height: Math.abs(np2.y - np1.y),
+    angle: 0, scaleX: 1, scaleY: 1 });
+  line.setCoords();
+  canvas.renderAll();
+}
+
+function showLineHandles(line) {
+  clearLineHandles();
+  nodeEditLine = line;
+  const { p1, p2 } = getAbsEndpoints(line);
+  [p1, p2].forEach((pt, i) => {
+    const h = new fabric.Circle({
+      left: pt.x, top: pt.y, radius: 7, originX: 'center', originY: 'center',
+      fill: '#e94560', stroke: 'white', strokeWidth: 2,
+      hasControls: false, hasBorders: false, selectable: true, evented: true,
+      _isHandle: true, _handleIdx: i + 1, _parentLine: line
+    });
+    suppressHist = true; canvas.add(h); suppressHist = false;
+    nodeHandles.push(h);
+  });
+  canvas.renderAll();
+}
+
+function clearLineHandles() {
+  nodeHandles.forEach(h => { suppressHist = true; canvas.remove(h); suppressHist = false; });
+  nodeHandles = []; nodeEditLine = null;
+}
+
+function snapAngle45(x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const snapped = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4);
+  return {
+    x: Math.round((x1 + dist * Math.cos(snapped)) / GRID) * GRID,
+    y: Math.round((y1 + dist * Math.sin(snapped)) / GRID) * GRID
+  };
+}
+
 // ══════════════════════════════════════
 // 底圖功能 (V3.4 新增)
 // ══════════════════════════════════════
@@ -684,6 +758,26 @@ function toggleBgVisibility() {
   canvas.renderAll();
 }
 
+let bgLocked = true;
+function toggleBgLock() {
+  if (!bgImage) return;
+  bgLocked = !bgLocked;
+  if (!bgLocked) {
+    bgImage.set({ selectable: true, evented: true, hasControls: true, hasBorders: true });
+    canvas.setActiveObject(bgImage);
+    document.getElementById('bgLockBtn').textContent = '🔒 鎖定底圖';
+    showHint('底圖解鎖！拖移 / 旋轉 / 縮放後按「鎖定底圖」固定');
+  } else {
+    bgImage.set({ selectable: false, evented: false, hasControls: false, hasBorders: false });
+    canvas.discardActiveObject();
+    canvas.sendToBack(bgImage);
+    document.getElementById('bgLockBtn').textContent = '📐 解鎖底圖（可旋轉縮放）';
+    showHint('底圖已鎖定');
+    setTimeout(() => showHint(''), 1500);
+  }
+  canvas.renderAll();
+}
+
 function removeBg() {
   if (!bgImage) return;
   if (!confirm('確定移除底圖？')) return;
@@ -702,7 +796,8 @@ function onMouseMove(e) {
   if (mode === 'select') { hideDot('dotCursor'); return; }
   moveDot('dotCursor', p);
   if ((mode === 'wall' || mode === 'dash') && ptStarted && ptPreview) {
-    ptPreview.set({ x2: p.x, y2: p.y }); canvas.renderAll();
+    const ep = e.shiftKey ? snapAngle45(ptX, ptY, p.x, p.y) : p;
+    ptPreview.set({ x2: ep.x, y2: ep.y }); canvas.renderAll();
   }
   if (mode === 'arc') {
     if (arcStep === 1 && arcPreview) { arcPreview.set({ x2: p.x, y2: p.y }); canvas.renderAll(); }
@@ -737,10 +832,11 @@ function handleWall(p, e) {
       strokeLineCap: 'round'
     });
     suppressHist = true; canvas.add(ptPreview); suppressHist = false;
-    showHint('點擊第二個位置完成，Esc 取消');
+    showHint('點擊第二個位置完成｜按住 Shift 鎖定 0°/45°/90°｜Esc 取消');
   } else {
+    const ep = e.shiftKey ? snapAngle45(ptX, ptY, p.x, p.y) : p;
     if (ptPreview) canvas.remove(ptPreview);
-    const line = new fabric.Line([ptX, ptY, p.x, p.y], {
+    const line = new fabric.Line([ptX, ptY, ep.x, ep.y], {
       stroke: isDash ? '#888' : '#1a1a2e', strokeWidth: isDash ? 3 : 6,
       strokeDashArray: isDash ? [8, 6] : [], selectable: true, evented: true,
       strokeLineCap: 'round'
@@ -1442,7 +1538,8 @@ function setLineStyle(style) {
 // ══════════════════════════════════════
 function deleteSelected() {
   const obj = canvas.getActiveObject(); if (!obj) return;
-  if (obj.name === '__bg_image__') return; // 底圖不可用 delete 刪除
+  if (obj.name === '__bg_image__') return;
+  if (obj._isHandle) return;
   if (obj.type === 'activeSelection') {
     // 多選刪除
     obj.forEachObject(o => { if (o.name !== '__bg_image__') canvas.remove(o); });
@@ -1482,12 +1579,19 @@ function toggleGrid() {
 // Undo / Redo
 // ══════════════════════════════════════
 function saveHistory() {
+  if (suppressHist) return;
+  suppressHist = true;
+  nodeHandles.forEach(h => canvas.remove(h));
   const json = JSON.stringify(canvas.toJSON(['name','selectable','evented']));
+  nodeHandles.forEach(h => canvas.add(h));
+  suppressHist = false;
+  if (nodeHandles.length) canvas.renderAll();
   history = history.slice(0, histIdx + 1); history.push(json); histIdx = history.length - 1; updateStatus();
 }
 function undo() { if (histIdx <= 0) return; histIdx--; loadState(history[histIdx]); }
 function redo() { if (histIdx >= history.length-1) return; histIdx++; loadState(history[histIdx]); }
 function loadState(json) {
+  clearLineHandles();
   suppressHist = true;
   canvas.loadFromJSON(json, () => {
     // 還原後重新找底圖參考
