@@ -39,7 +39,7 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
 .act-btn.redo{background:var(--btn);color:var(--text);border:1px solid var(--border);}
 .act-btn.clear{background:#3a1a2a;color:var(--accent);border:1px solid var(--accent);}
 .act-btn.export{background:var(--green);color:white;}
-.canvas-wrap{flex:1;position:relative;background:#f5f0e8;background-image:linear-gradient(rgba(100,100,200,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(100,100,200,0.08) 1px,transparent 1px);background-size:20px 20px;overflow:hidden;}
+.canvas-wrap{flex:1;position:relative;background:#f5f0e8;background-image:linear-gradient(rgba(100,100,200,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(100,100,200,0.05) 1px,transparent 1px),linear-gradient(rgba(100,100,200,0.13) 1px,transparent 1px),linear-gradient(90deg,rgba(100,100,200,0.13) 1px,transparent 1px);background-size:10px 10px,10px 10px,40px 40px,40px 40px;overflow:hidden;}
 #mainCanvas{display:block;}
 #polyPreviewCanvas{position:absolute;top:0;left:0;pointer-events:none;z-index:50;}
 .dot-marker{position:absolute;width:10px;height:10px;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:101;display:none;}
@@ -507,7 +507,7 @@ let canvas, previewCtx;
 let mode = 'select';
 let snapOn = true, gridOn = true;
 let history = [], histIdx = -1, suppressHist = false;
-const GRID = 20;
+const GRID = 10;
 let currentColor = '#FAFAFA';
 
 // 點對點
@@ -573,7 +573,10 @@ window.onload = () => {
     // 用 document.activeElement 判斷，比 e.target 可靠
     const focused = document.activeElement;
     const focusTag = focused ? focused.tagName : '';
-    if (focusTag === 'INPUT' || focusTag === 'TEXTAREA' || focusTag === 'SELECT') {
+    // 排除 Fabric.js 內建隱藏 textarea（它在 .canvas-container 內），
+    // 這個 textarea 搶走 focus 但不是真正的使用者輸入，不能讓它攔截 Delete 等快捷鍵
+    const isFabricInternal = focusTag === 'TEXTAREA' && focused.closest('.canvas-container');
+    if ((focusTag === 'INPUT' || focusTag === 'TEXTAREA' || focusTag === 'SELECT') && !isFabricInternal) {
       // 在 UI 輸入中，只攔截 Escape
       if (e.key === 'Escape') { e.preventDefault(); focused.blur(); cancelDraw(); }
       return;
@@ -730,7 +733,8 @@ function handleWall(p, e) {
     moveDot('dotStart', p);
     ptPreview = new fabric.Line([p.x, p.y, p.x, p.y], {
       stroke: isDash ? '#888' : '#1a1a2e', strokeWidth: isDash ? 3 : 6,
-      strokeDashArray: isDash ? [8, 6] : [], selectable: false, evented: false, opacity: 0.5
+      strokeDashArray: isDash ? [8, 6] : [], selectable: false, evented: false, opacity: 0.5,
+      strokeLineCap: 'round'
     });
     suppressHist = true; canvas.add(ptPreview); suppressHist = false;
     showHint('點擊第二個位置完成，Esc 取消');
@@ -738,7 +742,8 @@ function handleWall(p, e) {
     if (ptPreview) canvas.remove(ptPreview);
     const line = new fabric.Line([ptX, ptY, p.x, p.y], {
       stroke: isDash ? '#888' : '#1a1a2e', strokeWidth: isDash ? 3 : 6,
-      strokeDashArray: isDash ? [8, 6] : [], selectable: true, evented: true
+      strokeDashArray: isDash ? [8, 6] : [], selectable: true, evented: true,
+      strokeLineCap: 'round'
     });
     canvas.add(line);
     resetPt(); showHint(''); saveHistory();
@@ -1430,7 +1435,16 @@ function setLineStyle(style) {
 function deleteSelected() {
   const obj = canvas.getActiveObject(); if (!obj) return;
   if (obj.name === '__bg_image__') return; // 底圖不可用 delete 刪除
-  canvas.remove(obj); saveHistory(); document.getElementById('propPanel').style.display = 'none';
+  if (obj.type === 'activeSelection') {
+    // 多選刪除
+    obj.forEachObject(o => { if (o.name !== '__bg_image__') canvas.remove(o); });
+    canvas.discardActiveObject();
+  } else {
+    canvas.remove(obj);
+  }
+  saveHistory();
+  document.getElementById('propPanel').style.display = 'none';
+  canvas.requestRenderAll();
 }
 function clearAll() {
   if (!confirm('確定清空畫布？這會連底圖一起清除。')) return;
@@ -1446,8 +1460,14 @@ function clearAll() {
 function toggleSnap() { snapOn = !snapOn; document.getElementById('snapToggle').className = 'toggle' + (snapOn ? ' on' : ''); }
 function toggleGrid() {
   gridOn = !gridOn; document.getElementById('gridToggle').className = 'toggle' + (gridOn ? ' on' : '');
-  document.getElementById('canvasWrap').style.backgroundImage = gridOn
-    ? 'linear-gradient(rgba(100,100,200,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(100,100,200,0.08) 1px,transparent 1px)' : 'none';
+  const wrap = document.getElementById('canvasWrap');
+  if (gridOn) {
+    wrap.style.backgroundImage = 'linear-gradient(rgba(100,100,200,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(100,100,200,0.05) 1px,transparent 1px),linear-gradient(rgba(100,100,200,0.13) 1px,transparent 1px),linear-gradient(90deg,rgba(100,100,200,0.13) 1px,transparent 1px)';
+    wrap.style.backgroundSize = '10px 10px,10px 10px,40px 40px,40px 40px';
+  } else {
+    wrap.style.backgroundImage = 'none';
+    wrap.style.backgroundSize = '';
+  }
 }
 
 // ══════════════════════════════════════
