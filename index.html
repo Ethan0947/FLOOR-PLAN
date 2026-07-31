@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#111118">
-<title>Ethan 格局神器 V8.0（淺色·統一製圖語言）</title>
+<title>Ethan 格局神器 V9.2（統一方位角）</title>
 <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
 <style>
 :root{--bg:#f7f6f4;--sidebar:#ffffff;--panel:#ffffff;--accent:#e8741a;--accent-ink:#b8560d;--accent-bg:#fdf1e7;--accent2:#c98a12;--text:#1c1c1e;--muted:#8e8d89;--border:#e8e7e4;--border-strong:#d8d7d3;--btn:#f4f3f1;--btn-hover:#ecebe8;--green:#e8741a;--radius:8px;--glow:rgba(232,116,26,0.16);--sh-float:0 1px 3px rgba(25,25,22,.08),0 10px 32px rgba(25,25,22,.10);--sh-menu:0 4px 24px rgba(25,25,22,.14);}
@@ -505,7 +505,7 @@ summary.rp-bg-summary::-webkit-details-marker{display:none;}
       <path d="M5.5 9.5 A4 4 0 0 1 9.5 13.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
     </svg>
     <span class="brand-name">格局神器</span>
-    <span class="version">V8</span>
+    <span class="version">V9.2</span>
   </div>
   <div class="tb-sep"></div>
   <div class="tb-mode">
@@ -815,12 +815,12 @@ summary.rp-bg-summary::-webkit-details-marker{display:none;}
 <div class="modal-overlay" id="helpModal" onclick="closeHelp(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
-      <h2>📖 格局神器使用說明</h2>
+      <h2>📖 格局神器使用說明（V9.2）</h2>
       <button class="modal-close" onclick="closeHelp()">✕</button>
     </div>
     <div class="modal-body">
       <div class="help-section" style="background:rgba(232,116,26,0.06);border:1px solid rgba(232,116,26,0.25);border-radius:8px;padding:12px 14px;margin-bottom:18px;">
-        <h3 style="color:var(--accent);border-bottom-color:rgba(232,116,26,0.3);">🚀 V8／V9 新增功能</h3>
+        <h3 style="color:var(--accent);border-bottom-color:rgba(232,116,26,0.3);">🚀 V8 ~ V9.2 新增功能</h3>
         <div class="help-text" style="opacity:.75;margin-bottom:8px">— 畫圖手感 —</div>
         <div class="help-row"><span class="help-icon">📐</span><div class="help-text"><strong>正交鎖定（預設開啟）</strong>：畫牆自動水平／垂直，<strong>畫出來預設就是直的</strong>。要畫斜牆時<kbd class="kbd">按住 Alt</kbd> 暫時解開；不想要可從頂欄「正交」開關關掉。</div></div>
         <div class="help-row"><span class="help-icon">🧲</span><div class="help-text"><strong>端點吸附</strong>：滑鼠靠近既有端點會自動接上去。<span style="color:#ff2d95">洋紅方框</span>＝吸到端點、<span style="color:#ff2d95">洋紅三角</span>＝吸到線段中點。容差隨縮放自動調整（放大不會太黏、縮小也點得到）。</div></div>
