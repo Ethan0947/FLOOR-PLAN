@@ -5,43 +5,92 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#111118">
-<title>Ethan 格局神器 V4.0</title>
+<title>Ethan 格局神器 V8.0（淺色·統一製圖語言）</title>
 <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
 <style>
-:root{--bg:#111118;--sidebar:#16171f;--panel:#1a1b24;--accent:#e8741a;--accent2:#f5a623;--text:#e8e8f0;--muted:#7a7a90;--border:#2a2a38;--btn:#1e1f2a;--btn-hover:#272838;--green:#2ecc71;--radius:8px;--glow:rgba(232,116,26,0.22);}
+:root{--bg:#f7f6f4;--sidebar:#ffffff;--panel:#ffffff;--accent:#e8741a;--accent-ink:#b8560d;--accent-bg:#fdf1e7;--accent2:#c98a12;--text:#1c1c1e;--muted:#8e8d89;--border:#e8e7e4;--border-strong:#d8d7d3;--btn:#f4f3f1;--btn-hover:#ecebe8;--green:#e8741a;--radius:8px;--glow:rgba(232,116,26,0.16);--sh-float:0 1px 3px rgba(25,25,22,.08),0 10px 32px rgba(25,25,22,.10);--sh-menu:0 4px 24px rgba(25,25,22,.14);}
 *{box-sizing:border-box;margin:0;padding:0;}
+/* V8：角度數字輸入 + 直角快捷 */
+.angle-val input#angleNum{width:52px;background:var(--btn);border:1px solid var(--border);border-radius:5px;
+  color:var(--accent);font-weight:700;font-size:0.74rem;padding:2px 4px;text-align:right;font-family:inherit;
+  font-variant-numeric:tabular-nums;}
+.angle-val input#angleNum:focus{outline:none;border-color:var(--accent);}
+.angle-quick{display:flex;gap:4px;margin-top:6px;}
+.angle-quick button{flex:1;background:var(--btn);border:1px solid var(--border);border-radius:5px;
+  color:var(--muted);font-size:0.62rem;padding:4px 0;cursor:pointer;font-family:inherit;transition:all .15s;}
+.angle-quick button:hover{background:var(--btn-hover);color:var(--accent);border-color:var(--accent);}
+/* V5：所有數字欄位用等寬數字，物件數/縮放%/座標跳動時不會左右晃 */
+.status,.status *,#layerCount,#zoomLabel,.layer-name,.prop-row input,.coord{font-variant-numeric:tabular-nums;}
+
+/* ══ V6 浮動工具列（畫布下方置中）══ */
+.float-tools{
+  position:absolute; left:50%; bottom:44px; transform:translateX(-50%);
+  z-index:1200; display:flex; align-items:center; gap:3px;
+  background:rgba(255,255,255,0.96); backdrop-filter:blur(10px);
+  border:1px solid var(--border); border-radius:12px; padding:5px;
+  box-shadow:var(--sh-float);
+  max-width:calc(100% - 24px); overflow-x:auto; scrollbar-width:none;
+}
+.float-tools::-webkit-scrollbar{display:none;}
+.ft-btn{
+  background:transparent; border:1px solid transparent; border-radius:8px;
+  color:var(--muted); cursor:pointer; padding:6px 9px; flex-shrink:0;
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  font-size:0.62rem; line-height:1.15; transition:all .16s; font-family:inherit;
+}
+.ft-btn .ico{display:flex;align-items:center;justify-content:center;height:19px;}
+.ft-btn .ico svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.ft-btn:hover{background:var(--btn-hover); color:var(--text);}
+.ft-btn.active{
+  background:rgba(232,116,26,0.16); border-color:var(--accent); color:var(--accent);
+  box-shadow:none;
+}
+.ft-sep{width:1px; height:26px; background:var(--border); margin:0 2px; flex-shrink:0;}
+
+/* V6：工具搬走後左欄只剩品牌 → 收掉，畫布拿回 270px */
+body.v6-layout .sidebar{display:none;}
+body.v6-layout .tb-brand{display:flex; align-items:center; gap:6px; margin-right:4px;}
+.tb-brand .brand-icon{width:20px; height:20px; color:var(--accent);}
+.tb-brand .brand-name{font-size:0.74rem; font-weight:900; color:var(--accent); letter-spacing:.5px;}
+.tb-brand .version{font-size:0.54rem; background:var(--accent); color:#fff; padding:1px 6px; border-radius:20px; font-weight:800;}
+@media(max-width:900px){
+  .float-tools{bottom:52px; padding:4px;}
+  .ft-btn{padding:5px 7px; font-size:0.56rem;}
+  .ft-btn .ico{font-size:0.95rem;}
+  .tb-brand .brand-name,.tb-brand .version{display:none;}
+}
 body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden;touch-action:none;}
 .sidebar{width:270px;min-width:270px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;z-index:1500;transition:transform 0.3s ease;}
 .sidebar-header{padding:12px 10px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:4px;}
-.brand-icon{width:34px;height:34px;color:var(--accent);filter:drop-shadow(0 0 6px rgba(232,116,26,0.4));flex-shrink:0;}
-.brand-name{font-size:0.78rem;font-weight:900;color:var(--accent);letter-spacing:1px;line-height:1;text-shadow:0 0 10px rgba(232,116,26,0.3);}
+.brand-icon{width:34px;height:34px;color:var(--accent);flex-shrink:0;}
+.brand-name{font-size:0.78rem;font-weight:900;color:var(--accent);letter-spacing:1px;line-height:1;}
 .brand-sub{font-size:0.48rem;color:var(--muted);letter-spacing:1.8px;text-transform:uppercase;line-height:1;}
 .version{font-size:0.58rem;background:var(--accent);color:#fff;padding:2px 9px;border-radius:20px;font-weight:800;letter-spacing:0.8px;border:none;box-shadow:0 1px 4px rgba(232,116,26,0.45);}
 .section{padding:9px 12px;border-bottom:1px solid var(--border);}
 .section-title{font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:7px;font-weight:600;}
 .tool-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
-.tool-btn{background:var(--btn);border:1px solid var(--border);border-radius:var(--radius);color:var(--muted);cursor:pointer;padding:7px 3px;text-align:center;font-size:0.68rem;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all 0.18s;line-height:1.2;box-shadow:0 1px 3px rgba(0,0,0,0.3);}
-.tool-btn:hover{background:var(--btn-hover);border-color:rgba(232,116,26,0.5);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,0.4);}
-.tool-btn.active{background:rgba(232,116,26,0.15);border-color:var(--accent);color:var(--accent);box-shadow:0 0 10px var(--glow),0 1px 3px rgba(0,0,0,0.3);}
+.tool-btn{background:var(--btn);border:1px solid var(--border);border-radius:var(--radius);color:var(--muted);cursor:pointer;padding:7px 3px;text-align:center;font-size:0.68rem;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all 0.18s;line-height:1.2;box-shadow:0 1px 3px rgba(25,25,22,0.3);}
+.tool-btn:hover{background:var(--btn-hover);border-color:rgba(232,116,26,0.5);color:var(--text);box-shadow:0 2px 8px rgba(25,25,22,0.4);}
+.tool-btn.active{background:rgba(232,116,26,0.15);border-color:var(--accent);color:var(--accent);box-shadow:0 1px 3px rgba(25,25,22,0.3);}
 .tool-btn .icon{font-size:1rem;}
 .color-row{display:flex;gap:5px;flex-wrap:wrap;}
 .swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform 0.15s,border-color 0.15s;}
-.swatch:hover{transform:scale(1.15);border-color:white;}
+.swatch:hover{transform:scale(1.15);border-color:var(--accent);}
 .swatch.active{border-color:var(--accent2);transform:scale(1.15);}
 .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:3px 0;}
 .toggle-label{font-size:0.76rem;}
 .toggle{position:relative;width:32px;height:17px;background:var(--border);border-radius:20px;cursor:pointer;transition:background 0.2s;}
 .toggle.on{background:var(--green);}
-.toggle::after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;background:white;border-radius:50%;transition:left 0.2s;}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;background:#fff;border-radius:50%;transition:left 0.2s;}
 .toggle.on::after{left:17px;}
 .action-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 12px;}
-.act-btn{padding:8px;border:none;border-radius:var(--radius);font-size:0.76rem;font-weight:700;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;justify-content:center;gap:4px;box-shadow:0 1px 4px rgba(0,0,0,0.3);}
-.act-btn:hover{opacity:0.9;transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,0.4);}
+.act-btn{padding:8px;border:none;border-radius:var(--radius);font-size:0.76rem;font-weight:700;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;justify-content:center;gap:4px;box-shadow:0 1px 4px rgba(25,25,22,0.3);}
+.act-btn:hover{opacity:0.9;transform:translateY(-1px);box-shadow:0 3px 10px rgba(25,25,22,0.4);}
 .act-btn.undo{background:var(--btn);color:var(--text);border:1px solid var(--border);}
 .act-btn.redo{background:var(--btn);color:var(--text);border:1px solid var(--border);}
 .act-btn.clear{background:rgba(232,116,26,0.1);color:var(--accent);border:1px solid rgba(232,116,26,0.4);}
 .act-btn.export{background:var(--green);color:white;border:1px solid rgba(46,204,113,0.5);}
-.canvas-wrap{flex:1;position:relative;background:#f5f0e8;background-image:linear-gradient(rgba(100,100,200,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(100,100,200,0.05) 1px,transparent 1px),linear-gradient(rgba(100,100,200,0.13) 1px,transparent 1px),linear-gradient(90deg,rgba(100,100,200,0.13) 1px,transparent 1px);background-size:5px 5px,5px 5px,20px 20px,20px 20px;overflow:hidden;}
+.canvas-wrap{flex:1;position:relative;background:#f7f6f4;background-image:linear-gradient(rgba(28,28,30,0.045) 1px,transparent 1px),linear-gradient(90deg,rgba(28,28,30,0.045) 1px,transparent 1px),linear-gradient(rgba(28,28,30,0.10) 1px,transparent 1px),linear-gradient(90deg,rgba(28,28,30,0.10) 1px,transparent 1px);background-size:5px 5px,5px 5px,20px 20px,20px 20px;overflow:hidden;}
 #mainCanvas{display:block;}
 #polyPreviewCanvas{position:absolute;top:0;left:0;pointer-events:none;z-index:50;}
 #snapCanvas{position:absolute;top:0;left:0;pointer-events:none;z-index:52;}
@@ -50,18 +99,18 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
 .dot-yellow{background:var(--accent2);box-shadow:0 0 0 4px rgba(245,166,35,0.3);animation:pulse 1s infinite;}
 .dot-green{background:var(--green);box-shadow:0 0 0 4px rgba(46,204,113,0.3);}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 4px rgba(245,166,35,0.3)}50%{box-shadow:0 0 0 8px rgba(245,166,35,0.1)}}
-.statusbar{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(22,33,62,0.92);border:1px solid var(--border);border-radius:20px;padding:5px 14px;font-size:0.72rem;color:var(--muted);backdrop-filter:blur(8px);pointer-events:none;white-space:nowrap;}
+.statusbar{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.94);border:1px solid var(--border);box-shadow:var(--sh-float);border-radius:20px;padding:5px 14px;font-size:0.72rem;color:var(--muted);backdrop-filter:blur(8px);pointer-events:none;white-space:nowrap;}
 .statusbar span{color:var(--accent2);font-weight:bold;}
 .hint-bar{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(232,116,26,0.92);border-radius:20px;padding:5px 16px;font-size:0.75rem;color:white;pointer-events:none;display:none;white-space:nowrap;max-width:90%;text-align:center;border:1px solid rgba(232,116,26,0.5);backdrop-filter:blur(8px);}
 
 /* ── 說明按鈕 ── */
-.help-btn{position:absolute;top:14px;right:16px;z-index:1200;width:36px;height:36px;border-radius:50%;background:var(--panel);border:1px solid var(--border);color:var(--accent2);font-size:1.1rem;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);transition:background 0.2s;}
+.help-btn{position:absolute;top:14px;right:16px;z-index:1200;width:36px;height:36px;border-radius:50%;background:var(--panel);border:1px solid var(--border);color:var(--accent2);font-size:1.1rem;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(25,25,22,0.3);transition:background 0.2s;}
 .help-btn:hover{background:var(--btn-hover);}
 
 /* ── Modal ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:3000;display:none;align-items:center;justify-content:center;}
+.modal-overlay{position:fixed;inset:0;background:rgba(25,25,22,0.65);z-index:3000;display:none;align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
-.modal{background:var(--sidebar);border:1px solid var(--border);border-radius:14px;width:90%;max-width:520px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.modal{background:var(--sidebar);border:1px solid var(--border);border-radius:14px;width:90%;max-width:520px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(25,25,22,0.5);}
 .modal-header{padding:16px 20px;background:var(--panel);border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
 .modal-header h2{font-size:1rem;color:var(--accent2);}
 .modal-close{cursor:pointer;font-size:1.3rem;color:var(--muted);background:none;border:none;color:var(--text);}
@@ -76,7 +125,7 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
 .kbd{display:inline-block;background:var(--btn);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:0.72rem;color:var(--accent2);font-family:monospace;}
 
 /* ── Prop Panel ── */
-.prop-panel{position:absolute;top:60px;right:16px;background:var(--sidebar);border:1px solid var(--border);border-radius:var(--radius);padding:14px;width:200px;display:none;z-index:1100;box-shadow:0 8px 30px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.03);}
+.prop-panel{position:absolute;top:60px;right:16px;background:var(--sidebar);border:1px solid var(--border);border-radius:var(--radius);padding:14px;width:200px;display:none;z-index:1100;box-shadow:0 8px 30px rgba(25,25,22,0.5),0 0 0 1px rgba(255,255,255,0.03);}
 .prop-panel h4{font-size:0.76rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;justify-content:space-between;}
 .prop-panel h4 .close-btn{cursor:pointer;color:var(--accent);font-size:1rem;}
 .prop-row{margin-bottom:9px;}
@@ -104,7 +153,7 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
   display:none;
   flex-direction:column;
   z-index:2000;
-  box-shadow:0 12px 40px rgba(0,0,0,0.5);
+  box-shadow:0 12px 40px rgba(25,25,22,0.5);
   overflow:hidden;
   /* 讓面板可以被拖移 */
   user-select:none;
@@ -133,7 +182,7 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
   padding:6px 10px;
   border-bottom:1px solid var(--border);
   flex-shrink:0;
-  background:rgba(0,0,0,0.1);
+  background:rgba(25,25,22,0.1);
 }
 .layer-tb-btn{
   flex:1;
@@ -212,7 +261,7 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
   align-items:center;
   justify-content:space-between;
   flex-shrink:0;
-  background:rgba(0,0,0,0.1);
+  background:rgba(25,25,22,0.1);
 }
 .layer-footer-hint{font-size:0.6rem;color:var(--muted);}
 .layer-shortcut{font-size:0.6rem;color:var(--muted);background:var(--btn);padding:1px 5px;border-radius:3px;border:1px solid var(--border);}
@@ -232,7 +281,7 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
   cursor:pointer;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:1px;
-  box-shadow:0 4px 16px rgba(0,0,0,0.4);
+  box-shadow:0 4px 16px rgba(25,25,22,0.4);
   transition:all 0.2s;
 }
 .layer-toggle-fab:hover{background:var(--btn-hover);transform:scale(1.05);}
@@ -253,7 +302,7 @@ body{font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--
 
 /* ── Mobile ── */
 .menu-toggle{display:none;position:fixed;top:12px;left:12px;z-index:2000;background:var(--accent);color:white;border:1px solid rgba(232,116,26,0.6);border-radius:50%;width:42px;height:42px;font-size:1.1rem;cursor:pointer;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(232,116,26,0.4);}
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1400;}
+.overlay{display:none;position:fixed;inset:0;background:rgba(25,25,22,0.5);z-index:1400;}
 @media(max-width:768px){
   .menu-toggle{display:flex;}
   .sidebar{position:fixed;top:0;left:0;height:100%;transform:translateX(-100%);width:270px!important;min-width:270px!important;}
@@ -275,6 +324,39 @@ body{flex-direction:column;}
 .layer-toggle-fab{display:none!important;}
 /* Prop panel offset for top bar */
 .prop-panel{top:50px;}
+/* ── V9.1 屬性面板停靠：桌機收進右面板底部，不再蓋住畫布 ── */
+.right-panel>.prop-panel{
+  position:static!important;top:auto!important;right:auto!important;left:auto!important;bottom:auto!important;
+  width:auto!important;z-index:auto!important;
+  border:none!important;border-top:1px solid var(--border)!important;border-radius:0!important;
+  box-shadow:none!important;
+  flex-shrink:0;max-height:48%;overflow-y:auto;padding:0 8px 10px;
+}
+/* ── V9.1 右面板收合把手（學 HomePlan 的邊緣箭頭）── */
+.right-panel{transition:width .18s ease,min-width .18s ease;}
+.main-area{position:relative;}
+.rp-collapse{
+  /* ⚠️ 不能放在 .right-panel 裡面——它有 overflow:hidden，會把把手裁掉。
+     改成掛在 .main-area 上，用 right 值貼住右面板左緣。 */
+  position:absolute;right:220px;top:50%;transform:translateY(-50%);
+  transition:right .18s ease,color .15s,background .15s;
+  width:15px;height:50px;border-radius:7px 0 0 7px;
+  background:var(--sidebar);border:1px solid var(--border);border-right:none;
+  color:var(--muted);font-size:0.78rem;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;z-index:1200;padding:0;
+  box-shadow:-2px 0 8px rgba(25,25,22,0.07);
+}
+.rp-collapse:hover{color:var(--accent);background:var(--btn-hover);}
+.right-panel.collapsed{width:0!important;min-width:0!important;border-left:none!important;overflow:visible!important;}
+.right-panel.collapsed>*{display:none!important;}
+body.rp-collapsed .rp-collapse{right:0;}
+@media(max-width:768px){.rp-collapse{display:none;}}
+.right-panel>.prop-panel h4{
+  position:sticky;top:0;background:var(--sidebar);z-index:2;
+  margin:0 -8px 8px;padding:9px 8px 7px;
+  border-bottom:1px solid var(--border);
+}
 /* ── Top bar components ── */
 .tb-sep{width:1px;height:22px;background:var(--border);flex-shrink:0;}
 .tb-label{font-size:0.64rem;color:var(--muted);white-space:nowrap;}
@@ -300,7 +382,7 @@ body{flex-direction:column;}
 .tool-btn .icon{font-size:1.15rem;}
 /* Tooltip */
 .tool-btn[data-tip]{position:relative;}
-.tool-btn[data-tip]::after,.act-btn[data-tip]::after{content:attr(data-tip);position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);background:#14141c;color:var(--text);padding:5px 10px;border-radius:6px;font-size:0.75rem;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity 0.15s;z-index:9999;border:1px solid var(--border);box-shadow:0 4px 12px rgba(0,0,0,0.5);}
+.tool-btn[data-tip]::after,.act-btn[data-tip]::after{content:attr(data-tip);position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);background:#14141c;color:var(--text);padding:5px 10px;border-radius:6px;font-size:0.75rem;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity 0.15s;z-index:9999;border:1px solid var(--border);box-shadow:0 4px 12px rgba(25,25,22,0.5);}
 .tool-btn[data-tip]:hover::after,.act-btn[data-tip]:hover::after{opacity:1;}
 .act-btn[data-tip]{position:relative;}
 /* Compact color row */
@@ -405,7 +487,7 @@ summary.rp-bg-summary::-webkit-details-marker{display:none;}
 .cp-recent-swatch:hover{border-color:var(--accent);transform:scale(1.2);}
 </style>
 </head>
-<body>
+<body class="v6-layout">
 <button class="menu-toggle" onclick="toggleSidebar()">🛠️</button>
 <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
@@ -414,13 +496,27 @@ summary.rp-bg-summary::-webkit-details-marker{display:none;}
 
 <!-- ── TOP BAR ── -->
 <div class="top-bar" id="topBar">
+  <!-- V6：品牌從左欄搬進頂欄（左欄整個收掉，畫布多 270px） -->
+  <div class="tb-brand">
+    <svg class="brand-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="2" y="3" width="20" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/>
+      <line x1="12" y1="3" x2="12" y2="21" stroke="currentColor" stroke-width="1.5"/>
+      <line x1="12" y1="14" x2="22" y2="14" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M5.5 9.5 A4 4 0 0 1 9.5 13.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+    </svg>
+    <span class="brand-name">格局神器</span>
+    <span class="version">V8</span>
+  </div>
+  <div class="tb-sep"></div>
   <div class="tb-mode">
     <span class="tb-label">模式：</span>
     <span class="tb-mode-tag" id="modeLabel">選取</span>
   </div>
   <div class="tb-sep"></div>
   <div class="tb-settings">
-    <span class="tb-label">吸附</span>
+    <span class="tb-label">正交</span>
+    <div class="toggle on" id="orthoToggle" onclick="toggleOrtho()" title="正交鎖定：畫牆自動水平／垂直（按 Alt 暫時解開）" style="flex-shrink:0"></div>
+    <span class="tb-label" style="margin-left:4px">吸附</span>
     <div class="toggle on" id="snapToggle" onclick="toggleSnap()" title="格線吸附" style="flex-shrink:0"></div>
     <span class="tb-label" style="margin-left:4px">格線</span>
     <div class="toggle on" id="gridToggle" onclick="toggleGrid()" title="顯示格線" style="flex-shrink:0"></div>
@@ -456,22 +552,10 @@ summary.rp-bg-summary::-webkit-details-marker{display:none;}
     </svg>
     <span class="brand-name">格局神器</span>
     <span class="brand-sub">Floor Plan Tool</span>
-    <span class="version">V4.0</span>
+    <span class="version">V5.0</span>
   </div>
 
-  <div class="sidebar-tools">
-    <button class="tool-btn active" id="btn-select" data-tip="選取" onclick="setMode('select')"><span class="icon">✋</span>選取</button>
-    <div class="lt-sep"></div>
-    <button class="tool-btn" id="btn-wall" data-tip="實線牆" onclick="setMode('wall')"><span class="icon">➖</span>實線牆</button>
-    <button class="tool-btn" id="btn-dash" data-tip="虛線" onclick="setMode('dash')"><span class="icon">┄</span>虛線</button>
-    <button class="tool-btn" id="btn-arc" data-tip="弧線" onclick="setMode('arc')"><span class="icon">〜</span>弧線</button>
-    <button class="tool-btn" id="btn-poly" data-tip="框填色" onclick="setMode('poly')"><span class="icon">🪣</span>框填色</button>
-    <button class="tool-btn" id="btn-fill" data-tip="點擊填色" onclick="setMode('fill')"><span class="icon">🎨</span>點擊填色</button>
-    <div class="lt-sep"></div>
-    <button class="tool-btn" data-tip="新增文字" onclick="addText()"><span class="icon">📝</span>文字</button>
-    <button class="tool-btn" data-tip="新增標尺" onclick="addDimension()"><span class="icon">📏</span>標尺</button>
-  </div>
-
+  <!-- V6：工具按鈕已搬到畫布下方的浮動工具列（見 #floatTools） -->
 </div><!-- /sidebar -->
 
 <!-- ── CANVAS AREA ── -->
@@ -482,6 +566,25 @@ summary.rp-bg-summary::-webkit-details-marker{display:none;}
   <div class="dot-marker dot-yellow" id="dotStart"></div>
   <div class="dot-marker dot-red" id="dotCursor"></div>
   <div class="dot-marker dot-green" id="dotMid"></div>
+
+  <!-- ══ V6：浮動工具列（畫布下方置中）══
+       為什麼從左欄搬到這裡：
+       ① 畫牆時視線在畫布上，工具列離手最近（Figma／Rayon 那類工具的做法）
+       ② 它浮在畫布上、不佔版面 → 畫布直接多拿回 270px
+       ③ 縮放畫布時不會擠壓版面 -->
+  <div class="float-tools" id="floatTools">
+    <button class="ft-btn active" id="btn-select" data-tip="選取" onclick="setMode('select')"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3v13l3.2-3.4 2.6 5.6 2.2-1-2.5-5.4H15z"/></svg></span><span class="lbl">選取</span></button>
+    <div class="ft-sep"></div>
+    <button class="ft-btn" id="btn-wall" data-tip="實線牆" onclick="setMode('wall')"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18" stroke-width="3.2"/></svg></span><span class="lbl">實線牆</span></button>
+    <button class="ft-btn" id="btn-dash" data-tip="虛線" onclick="setMode('dash')"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18" stroke-dasharray="4 3.2"/></svg></span><span class="lbl">虛線</span></button>
+    <button class="ft-btn" id="btn-arc" data-tip="弧線" onclick="setMode('arc')"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17q9-16 18 0"/></svg></span><span class="lbl">弧線</span></button>
+    <div class="ft-sep"></div>
+    <button class="ft-btn" id="btn-poly" data-tip="框填色" onclick="setMode('poly')"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5 19 8l-2.6 10.5L7.2 17z"/><circle cx="12" cy="12" r="1.4"/></svg></span><span class="lbl">框填色</span></button>
+    <button class="ft-btn" id="btn-fill" data-tip="點擊填色" onclick="setMode('fill')"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2s-5.6 6.4-5.6 10a5.6 5.6 0 0 0 11.2 0c0-3.6-5.6-10-5.6-10z"/></svg></span><span class="lbl">點填色</span></button>
+    <div class="ft-sep"></div>
+    <button class="ft-btn" data-tip="新增文字" onclick="addText()"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h12M12 6v12M9.5 18h5"/></svg></span><span class="lbl">文字</span></button>
+    <button class="ft-btn" data-tip="新增標尺" onclick="addDimension()"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18v6H3z"/><path d="M7 9v2.6M11 9v3.6M15 9v2.6M19 9v3.6"/></svg></span><span class="lbl">標尺</span></button>
+  </div>
   <div class="hint-bar" id="hintBar"></div>
   <div class="statusbar">物件：<span id="objCount">0</span> ｜ 縮放：<span id="zoomLabel">100%</span> ｜ 復原：<span id="histLabel">0/0</span></div>
   <button class="help-btn" onclick="openHelp()" title="使用說明">？</button>
@@ -492,6 +595,7 @@ summary.rp-bg-summary::-webkit-details-marker{display:none;}
 </div>
 
 <!-- ── RIGHT PANEL ── -->
+<button class="rp-collapse" id="rpCollapseBtn" onclick="toggleRightPanel()" title="收合／展開右側面板">›</button>
 <div class="right-panel" id="rightPanel">
 <input type="radio" name="rp-tab" id="rp-tab-layers" class="rp-tab-radio" checked>
 <input type="radio" name="rp-tab" id="rp-tab-assets" class="rp-tab-radio">
@@ -554,6 +658,20 @@ summary.rp-bg-summary::-webkit-details-marker{display:none;}
       <button class="tool-btn" data-tip="直梯" onclick="addObj('stair-straight')"><span class="icon">🪜</span>直梯</button>
       <button class="tool-btn" data-tip="旋轉梯" onclick="addObj('stair-spiral')"><span class="icon">🌀</span>旋轉梯</button>
       <button class="tool-btn" data-tip="L型梯" onclick="addObj('stair-l')"><span class="icon">↩️</span>L型梯</button>
+      <button class="tool-btn" data-tip="U型梯" onclick="addObj('ustair')"><span class="icon">🔁</span>U型梯</button>
+      <button class="tool-btn" data-tip="樓梯平台" onclick="addObj('landing')"><span class="icon">⬛</span>梯平台</button>
+      <button class="tool-btn" data-tip="梯下收納" onclick="addObj('understair')"><span class="icon">📐</span>梯下櫃</button>
+      <button class="tool-btn" data-tip="家用電梯" onclick="addObj('homelift')"><span class="icon">🛗</span>家用梯</button>
+    </div>
+  </details>
+  <details class="acc-section">
+    <summary class="acc-header">🔧 陽台設備</summary>
+    <div class="acc-grid">
+      <button class="tool-btn" data-tip="冷氣室外機" onclick="addObj('aircon')"><span class="icon">❄️</span>室外機</button>
+      <button class="tool-btn" data-tip="熱水器" onclick="addObj('waterheater')"><span class="icon">🔥</span>熱水器</button>
+      <button class="tool-btn" data-tip="洗衣機" onclick="addObj('washer')"><span class="icon">🌀</span>洗衣機</button>
+      <button class="tool-btn" data-tip="烘衣機" onclick="addObj('dryer')"><span class="icon">💨</span>烘衣機</button>
+      <button class="tool-btn" data-tip="瓦斯表" onclick="addObj('gasmeter')"><span class="icon">⏱️</span>瓦斯表</button>
     </div>
   </details>
   <details class="acc-section">
@@ -571,6 +689,7 @@ summary.rp-bg-summary::-webkit-details-marker{display:none;}
       <button class="tool-btn" data-tip="瓦斯爐" onclick="addObj('stove')"><span class="icon">🔥</span>瓦斯爐</button>
       <button class="tool-btn" data-tip="流理台" onclick="addObj('counter')"><span class="icon">📦</span>流理台</button>
       <button class="tool-btn" data-tip="冰箱" onclick="addObj('fridge')"><span class="icon">🧊</span>冰箱</button>
+      <button class="tool-btn" data-tip="中島" onclick="addObj('island')"><span class="icon">🏝️</span>中島</button>
     </div>
   </details>
   <details class="acc-section">
@@ -582,11 +701,22 @@ summary.rp-bg-summary::-webkit-details-marker{display:none;}
       <button class="tool-btn" data-tip="餐桌" onclick="addObj('table')"><span class="icon">🪑</span>餐桌</button>
       <button class="tool-btn" data-tip="書桌" onclick="addObj('desk')"><span class="icon">🖥️</span>書桌</button>
       <button class="tool-btn" data-tip="衣櫃" onclick="addObj('wardrobe')"><span class="icon">🗄️</span>衣櫃</button>
+      <button class="tool-btn" data-tip="茶几" onclick="addObj('coffeetable')"><span class="icon">🫖</span>茶几</button>
+      <button class="tool-btn" data-tip="電視櫃" onclick="addObj('tvcabinet')"><span class="icon">📺</span>電視櫃</button>
+      <button class="tool-btn" data-tip="床頭櫃" onclick="addObj('nightstand')"><span class="icon">🕯️</span>床頭櫃</button>
+      <button class="tool-btn" data-tip="化妝台" onclick="addObj('vanity')"><span class="icon">💄</span>化妝台</button>
+      <button class="tool-btn" data-tip="單椅" onclick="addObj('chair')"><span class="icon">🪑</span>單椅</button>
+      <button class="tool-btn" data-tip="書櫃" onclick="addObj('bookshelf')"><span class="icon">📚</span>書櫃</button>
+      <button class="tool-btn" data-tip="鞋櫃" onclick="addObj('shoecab')"><span class="icon">👞</span>鞋櫃</button>
+      <button class="tool-btn" data-tip="收納櫃" onclick="addObj('storage')"><span class="icon">🧰</span>收納櫃</button>
     </div>
   </details>
   <details class="acc-section">
     <summary class="acc-header">📌 通用</summary>
     <div class="acc-grid">
+      <button class="tool-btn" data-tip="神明桌" onclick="addObj('shrine')"><span class="icon">🛕</span>神明桌</button>
+      <button class="tool-btn" data-tip="大型盆栽" onclick="addObj('plant')"><span class="icon">🪴</span>盆栽</button>
+      <button class="tool-btn" data-tip="自行車" onclick="addObj('bicycle')"><span class="icon">🚲</span>自行車</button>
       <button class="tool-btn" data-tip="新增房間" onclick="addRoom()"><span class="icon">⬜</span>房間</button>
       <button class="tool-btn" data-tip="新增文字" onclick="addText()"><span class="icon">📝</span>文字</button>
       <button class="tool-btn" data-tip="新增標尺" onclick="addDimension()"><span class="icon">📏</span>標尺</button>
@@ -636,8 +766,19 @@ summary.rp-bg-summary::-webkit-details-marker{display:none;}
   <h4>物件屬性 <span class="close-btn" onclick="closeProp()">✕</span></h4>
   <div class="prop-row"><label>文字標籤</label><input type="text" id="propLabel" placeholder="輸入標籤..." oninput="updateLabel()"></div>
   <div class="prop-row">
-    <label>旋轉角度 <span class="angle-val" id="angleVal">0°</span></label>
-    <input type="range" id="propAngle" min="0" max="360" value="0" oninput="updateAngle()">
+    <label><span id="angleLabelText">旋轉角度</span>
+      <span class="angle-val"><input type="number" id="angleNum" min="0" max="360" step="1" value="0"
+        oninput="updateAngleNum()" onchange="updateAngleNum(true)">°</span>
+    </label>
+    <input type="range" id="propAngle" min="0" max="360" value="0" oninput="updateAngle()" onchange="saveHistory()">
+    <div id="angleAxisHint" style="font-size:0.6rem;color:var(--muted);margin:-2px 0 5px;letter-spacing:.3px;">右0° 上90° 左180° 下270°</div>
+    <div class="angle-quick">
+      <button type="button" onclick="setAngle(0)">0°</button>
+      <button type="button" onclick="setAngle(45)">45°</button>
+      <button type="button" onclick="setAngle(90)">90°</button>
+      <button type="button" onclick="setAngle(180)">180°</button>
+      <button type="button" onclick="setAngle(270)">270°</button>
+    </div>
   </div>
   <div class="prop-row">
     <label>線條樣式</label>
@@ -674,12 +815,33 @@ summary.rp-bg-summary::-webkit-details-marker{display:none;}
 <div class="modal-overlay" id="helpModal" onclick="closeHelp(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
-      <h2>📖 格局神器使用說明 V4.0</h2>
+      <h2>📖 格局神器使用說明</h2>
       <button class="modal-close" onclick="closeHelp()">✕</button>
     </div>
     <div class="modal-body">
       <div class="help-section" style="background:rgba(232,116,26,0.06);border:1px solid rgba(232,116,26,0.25);border-radius:8px;padding:12px 14px;margin-bottom:18px;">
-        <h3 style="color:var(--accent);border-bottom-color:rgba(232,116,26,0.3);">🚀 V4.0 新增功能</h3>
+        <h3 style="color:var(--accent);border-bottom-color:rgba(232,116,26,0.3);">🚀 V8／V9 新增功能</h3>
+        <div class="help-text" style="opacity:.75;margin-bottom:8px">— 畫圖手感 —</div>
+        <div class="help-row"><span class="help-icon">📐</span><div class="help-text"><strong>正交鎖定（預設開啟）</strong>：畫牆自動水平／垂直，<strong>畫出來預設就是直的</strong>。要畫斜牆時<kbd class="kbd">按住 Alt</kbd> 暫時解開；不想要可從頂欄「正交」開關關掉。</div></div>
+        <div class="help-row"><span class="help-icon">🧲</span><div class="help-text"><strong>端點吸附</strong>：滑鼠靠近既有端點會自動接上去。<span style="color:#ff2d95">洋紅方框</span>＝吸到端點、<span style="color:#ff2d95">洋紅三角</span>＝吸到線段中點。容差隨縮放自動調整（放大不會太黏、縮小也點得到）。</div></div>
+        <div class="help-row"><span class="help-icon">📏</span><div class="help-text"><strong>邊畫邊看數字</strong>：畫牆時提示列即時顯示<strong>長度與角度</strong>，不用畫完才知道歪了沒。</div></div>
+        <div class="help-row"><span class="help-icon">🧭</span><div class="help-text"><strong>線段方向角</strong>：選取線段時，屬性面板會顯示<strong>真實方向角</strong>（不是物件旋轉量，那對線段永遠是 0）。可<strong>直接輸入數字</strong>修正，會繞中點重新指向。另有 0°／45°／90°／180°／270° 快捷鈕。</div></div>
+        <div class="help-text" style="opacity:.75;margin:12px 0 8px">— 不怕做白工 —</div>
+        <div class="help-row"><span class="help-icon">💾</span><div class="help-text"><strong>自動存檔</strong>：畫圖過程自動存在本機。分頁被關掉、瀏覽器當掉，下次進來會問「<strong>要不要接回去</strong>」。提示條在你開始畫圖或 20 秒後會自動收起；按「清空」也會一併清除。</div></div>
+        <div class="help-row"><span class="help-icon">🔒</span><div class="help-text"><strong>圖層鎖定</strong>：圖層列每項都有 🔓 鎖。<strong>牆畫完先鎖住，之後擺傢俱就不會誤拖到牆</strong>——畫多層格局圖最實用的一項。</div></div>
+        <div class="help-row"><span class="help-icon">👁</span><div class="help-text"><strong>圖層顯示切換</strong>：暫時隱藏某個物件（存圖時不會出現），不用刪掉重畫。</div></div>
+        <div class="help-row"><span class="help-icon">⌨️</span><div class="help-text"><strong>Ctrl+A 全選</strong>：全選畫布物件，<strong>鎖定與隱藏的不列入</strong>。</div></div>
+        <div class="help-text" style="opacity:.75;margin:12px 0 8px">— 素材與畫面 —</div>
+        <div class="help-row"><span class="help-icon">🧱</span><div class="help-text"><strong>素材 28 → 48 項</strong>：新增<strong>陽台設備</strong>（冷氣室外機／熱水器／洗衣機／烘衣機／瓦斯表）、<strong>透天專用</strong>（U型梯／樓梯平台／梯下收納／家用電梯）、神明桌，以及茶几、電視櫃、床頭櫃、化妝台、鞋櫃、書櫃、中島等。</div></div>
+        <div class="help-row"><span class="help-icon">🏷️</span><div class="help-text"><strong>素材有名字</strong>：圖層面板顯示「茶几」「直梯」「指北針」，不再是看不懂的「元件 7」。</div></div>
+        <div class="help-row"><span class="help-icon">✏️</span><div class="help-text"><strong>統一製圖語言</strong>：所有素材收斂成<strong>三級線寬</strong>（粗3／中2／細1.2）與統一墨色。舊版線色有 6 種灰混用，在深色牆線旁顯得糊、廉價。</div></div>
+        <div class="help-row"><span class="help-icon">🪜</span><div class="help-text"><strong>樓梯與陽台重繪</strong>：三種樓梯加上<strong>上行動線箭頭</strong>；陽台改成建築圖標準的<strong>外緣雙線欄杆</strong>（舊版四條等距滿高直線＝樓梯畫法，難怪像樓梯）。指北針改成<strong>航海羅盤玫瑰</strong>。</div></div>
+        <div class="help-row"><span class="help-icon">🎨</span><div class="help-text"><strong>填色修正</strong>：點擊填色<strong>只輸出實際著色範圍</strong>，選取框不再跟整張畫布一樣大；透明處也不會擋住底下物件的點擊。</div></div>
+        <div class="help-row"><span class="help-icon">🌤️</span><div class="help-text"><strong>淺色介面</strong>：暖白底＋暖黑雙層陰影＋線條圖示，取代原本的深色＋發光效果。</div></div>
+        <div class="help-row"><span class="help-icon">📐</span><div class="help-text"><strong>標尺單位</strong>：標尺文字改成 <strong>M（公尺）</strong>。</div></div>
+</div>
+      <div class="help-section" style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:18px;">
+        <h3 style="color:var(--muted);border-bottom-color:var(--border);">V4.0 功能</h3>
         <div class="help-row"><span class="help-icon">🎨</span><div class="help-text"><strong>點擊填色</strong>：切換「點擊填色」模式，點擊封閉區域自動填色。</div></div>
         <div class="help-row"><span class="help-icon">🖱️</span><div class="help-text"><strong>畫布平移</strong>：<kbd class="kbd">Space</kbd>+拖曳 或 中鍵拖曳平移畫布，X/Y 兩軸均可移動。</div></div>
         <div class="help-row"><span class="help-icon">🔍</span><div class="help-text"><strong>縮放顯示</strong>：滾輪縮放畫布，狀態列即時顯示縮放比例。</div></div>
@@ -809,7 +971,7 @@ window.onload = () => {
   const wrap = document.getElementById('canvasWrap');
   canvas = new fabric.Canvas('mainCanvas', {
     width: wrap.clientWidth, height: wrap.clientHeight,
-    backgroundColor: 'rgba(0,0,0,0)', selection: true, preserveObjectStacking: true
+    backgroundColor: 'rgba(25,25,22,0)', selection: true, preserveObjectStacking: true
   });
   // 縮小選取控制點，避免誤觸鄰近物件
   fabric.Object.prototype.cornerSize = 8;
@@ -885,6 +1047,7 @@ window.onload = () => {
     else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') copySelected();
     else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') pasteClipboard();
     else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') duplicateSelected();
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') selectAll();   // V9：補上全選
     else if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
     else if (e.key === 'Escape') cancelDraw();
     else if (e.key === 'Enter' && mode === 'poly') finishPoly();
@@ -1001,8 +1164,98 @@ window.onload = () => {
 // 工具函數
 // ══════════════════════════════════════
 function snap(v) { return snapOn ? Math.round(v / GRID) * GRID : v; }
+
+// ══════════════════════════════════════
+// V5 端點吸附（手感的第一主因）
+//   V4 只有格線量化 Math.round(v/GRID)*GRID，畫牆接不到上一段端點，
+//   每道牆都要靠格線硬對——這才是「畫五層樓要兩小時」的主要去處。
+//   優先序：既有端點 ＞ 線段中點 ＞ 格線
+// ══════════════════════════════════════
+const SNAP_SCREEN_PX = 12;   // 容差一律用「螢幕像素」，不用世界座標
+                             // （寫死世界座標會變成：放大時太黏、縮小時點不到）
+/** 螢幕像素 → 世界單位（隨縮放自動換算） */
+function px(n) { return n / ((canvas && canvas.getZoom()) || 1); }
+
+let snapHit = null;          // 這一幀吸到的點 {x, y, type}
+
+/** 蒐集可吸附的候選點：線段端點、線段中點、多邊形頂點 */
+function collectSnapPoints() {
+  const pts = [];
+  const objs = canvas.getObjects();
+  if (objs.length > 2000) return pts;            // 極端情況的效能保險
+  for (let i = 0; i < objs.length; i++) {
+    const o = objs[i];
+    if (o._isHandle || o.name === '__bg_image__' || o.name === '__fill__') continue;
+    if (o.type === 'line') {
+      pts.push({ x: o.x1, y: o.y1, type: 'end' });
+      pts.push({ x: o.x2, y: o.y2, type: 'end' });
+      pts.push({ x: (o.x1 + o.x2) / 2, y: (o.y1 + o.y2) / 2, type: 'mid' });
+    } else if (o.type === 'polygon' && o.points) {
+      const m = o.calcTransformMatrix();
+      for (let k = 0; k < o.points.length; k++) {
+        const q = o.points[k];
+        const t = fabric.util.transformPoint(
+          { x: q.x - o.pathOffset.x, y: q.y - o.pathOffset.y }, m);
+        pts.push({ x: t.x, y: t.y, type: 'end' });
+      }
+    }
+  }
+  return pts;
+}
+
+/** 在容差內找最近的吸附點（端點加權優先於中點）；沒有就回 null */
+function findSnap(p) {
+  const tol = px(SNAP_SCREEN_PX);
+  const tol2 = tol * tol;
+  let best = null, bestScore = Infinity;
+  const pts = collectSnapPoints();
+  for (let i = 0; i < pts.length; i++) {
+    const s = pts[i];
+    const dx = s.x - p.x, dy = s.y - p.y;
+    const d2 = dx * dx + dy * dy;
+    if (d2 > tol2) continue;
+    const score = (s.type === 'mid') ? d2 * 4 : d2;   // 同距離時端點勝出
+    if (score < bestScore) { bestScore = score; best = s; }
+  }
+  return best;
+}
+
+/** 吸附視覺提示：沒有提示的吸附，使用者感受到的是「線莫名跳走」而不是「它幫我對齊」 */
+function drawSnapMarker() {
+  if (!snapCtx) return;
+  const cv = snapCtx.canvas;
+  snapCtx.clearRect(0, 0, cv.width, cv.height);
+  if (!snapHit) return;
+  const vt = canvas.viewportTransform;
+  const sx = snapHit.x * vt[0] + vt[4];
+  const sy = snapHit.y * vt[3] + vt[5];
+  const r = 6;
+  snapCtx.save();
+  snapCtx.strokeStyle = '#ff2d95';       // 洋紅＝吸附中
+  snapCtx.lineWidth = 2;
+  if (snapHit.type === 'end') {
+    snapCtx.strokeRect(sx - r, sy - r, r * 2, r * 2);            // 端點＝方框
+  } else {
+    snapCtx.beginPath();                                          // 中點＝三角形
+    snapCtx.moveTo(sx, sy - r);
+    snapCtx.lineTo(sx + r, sy + r);
+    snapCtx.lineTo(sx - r, sy + r);
+    snapCtx.closePath();
+    snapCtx.stroke();
+  }
+  snapCtx.restore();
+}
+
+function clearSnapMarker() { snapHit = null; drawSnapMarker(); }
+
 function getPt(e) {
   const p = canvas.getPointer(e); // 自動套用 viewportTransform，回傳 canvas 座標
+  // V5：畫圖模式先試端點吸附，吸不到才退回格線（選取/填色模式不吸）
+  if (mode === 'wall' || mode === 'dash' || mode === 'arc' || mode === 'poly') {
+    const s = findSnap(p);
+    if (s) { snapHit = s; return { x: s.x, y: s.y }; }
+  }
+  snapHit = null;
   return { x: snap(p.x), y: snap(p.y) };
 }
 function moveDot(id, canvasPt) {
@@ -1065,6 +1318,58 @@ function showLineHandles(line) {
 function clearLineHandles() {
   nodeHandles.forEach(h => { suppressHist = true; canvas.remove(h); suppressHist = false; });
   nodeHandles = []; nodeEditLine = null;
+}
+
+// ══════════════════════════════════════
+// V9：正交鎖定與即時讀數
+//   為什麼預設開啟：房間的牆九成是水平或垂直，預設鎖住才符合實際使用。
+//   要畫斜牆時按住 Alt 即可暫時解開。
+// ══════════════════════════════════════
+function orthoOn(e) { return orthoDefault ? !e.altKey : e.shiftKey; }
+
+/* ══ V9.2 統一方位角座標系 ══
+   整張畫布視為一個標準 XY 軸：右 0°、上 90°、左 180°、下 270°（逆時針為正）。
+   ⚠️ 螢幕座標的 Y 是往下增加的，所以算 atan2 時要把 dy 取負，否則「上」會變成 270°。
+   舊版沒取負 → 上下顛倒；而弧線根本沒算方向，顯示的是 fabric 的旋轉變換量（永遠 0）。 */
+function vecHeading(dx, dy) {
+  const deg = Math.atan2(-dy, dx) * 180 / Math.PI;   // 取負 = 把 Y 軸翻回數學慣例
+  return (deg % 360 + 360) % 360;
+}
+
+/** 線段方位角 */
+function lineHeading(o) { return vecHeading(o.x2 - o.x1, o.y2 - o.y1); }
+
+/** 弧線（Path）方位角＝起點→終點的弦向 */
+function pathHeading(o) {
+  const pa = o.path;
+  if (!pa || !pa.length) return 0;
+  const first = pa[0];
+  const last  = pa[pa.length - 1];
+  const x1 = first[1], y1 = first[2];
+  const x2 = last[last.length - 2], y2 = last[last.length - 1];
+  return vecHeading(x2 - x1, y2 - y1);
+}
+
+/** 這個物件有沒有「方向」可言（線／弧有起訖點；家具沒有，只有旋轉量） */
+function hasHeading(o) {
+  return o && (o.type === 'line' || (o.type === 'path' && Array.isArray(o.path) && o.path.length >= 2));
+}
+function headingOf(o) { return o.type === 'line' ? lineHeading(o) : pathHeading(o); }
+
+function showLiveDim(x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.round(Math.hypot(dx, dy));
+  const deg = vecHeading(dx, dy);   // V9.2：統一座標系（右0 上90 左180 下270）
+  const lock = orthoDefault ? '　🔒正交（按 Alt 暫時解開）' : '　按 Shift 鎖 0/45/90°';
+  showHint(`長度 ${len}　角度 ${deg.toFixed(1)}°${lock}`);
+}
+
+function toggleOrtho() {
+  orthoDefault = !orthoDefault;
+  const el = document.getElementById('orthoToggle');
+  if (el) el.classList.toggle('on', orthoDefault);
+  showHint(orthoDefault ? '正交鎖定：開（畫牆自動水平／垂直，按 Alt 暫時解開）' : '正交鎖定：關（按 Shift 才鎖角度）');
+  setTimeout(() => showHint(''), 2200);
 }
 
 function snapAngle45(x1, y1, x2, y2) {
@@ -1172,11 +1477,13 @@ function removeBg() {
 // ══════════════════════════════════════
 function onMouseMove(e) {
   const p = getPt(e);
-  if (mode === 'select') { hideDot('dotCursor'); return; }
+  if (mode === 'select') { hideDot('dotCursor'); return; }  // select 模式不動 snapCtx，留給 drawSnapGuides 用
   moveDot('dotCursor', p);
+  drawSnapMarker();          // V5：畫出吸附提示（吸到端點/中點時）
   if ((mode === 'wall' || mode === 'dash') && ptStarted && ptPreview) {
-    const ep = e.shiftKey ? snapAngle45(ptX, ptY, p.x, p.y) : p;
+    const ep = orthoOn(e) ? snapAngle45(ptX, ptY, p.x, p.y) : p;
     ptPreview.set({ x2: ep.x, y2: ep.y }); canvas.renderAll();
+    showLiveDim(ptX, ptY, ep.x, ep.y);          // V9：邊畫邊顯示長度與角度
   }
   if (mode === 'arc') {
     if (arcStep === 1 && arcPreview) { arcPreview.set({ x2: p.x, y2: p.y }); canvas.renderAll(); }
@@ -1207,17 +1514,17 @@ function handleWall(p, e) {
     ptStarted = true; ptX = p.x; ptY = p.y;
     moveDot('dotStart', p);
     ptPreview = new fabric.Line([p.x, p.y, p.x, p.y], {
-      stroke: isDash ? '#888' : '#1a1a2e', strokeWidth: isDash ? 3 : 6,
+      stroke: isDash ? '#8a877f' : '#1a1a2e', strokeWidth: isDash ? 3 : 6,
       strokeDashArray: isDash ? [8, 6] : [], selectable: false, evented: false, opacity: 0.5,
       strokeLineCap: 'round'
     });
     suppressHist = true; canvas.add(ptPreview); suppressHist = false;
     showHint('點擊第二個位置完成｜按住 Shift 鎖定 0°/45°/90°｜Esc 取消');
   } else {
-    const ep = e.shiftKey ? snapAngle45(ptX, ptY, p.x, p.y) : p;
+    const ep = orthoOn(e) ? snapAngle45(ptX, ptY, p.x, p.y) : p;
     if (ptPreview) canvas.remove(ptPreview);
     const line = new fabric.Line([ptX, ptY, ep.x, ep.y], {
-      stroke: isDash ? '#888' : '#1a1a2e', strokeWidth: isDash ? 3 : 6,
+      stroke: isDash ? '#8a877f' : '#1a1a2e', strokeWidth: isDash ? 3 : 6,
       strokeDashArray: isDash ? [8, 6] : [], selectable: true, evented: true,
       strokeLineCap: 'round'
     });
@@ -1273,7 +1580,10 @@ function handlePoly(p, e) {
 function finishPoly() {
   if (polyPts.length < 3) return;
   const poly = new fabric.Polygon(polyPts.map(pt => ({ x: pt.x, y: pt.y })), {
-    fill: currentColor, stroke: '#1a1a2e', strokeWidth: 3, selectable: true, evented: true, opacity: 0.85
+    fill: currentColor, stroke: '#1a1a2e', strokeWidth: 3, selectable: true, evented: true, opacity: 0.85,
+    // V5：用實際圖形做命中判定，不用外接矩形。畫 L 型/凹多邊形時，凹處不會再吃掉點擊
+    perPixelTargetFind: true,
+    name: '__fill_poly__'
   });
   canvas.add(poly); canvas.setActiveObject(poly);
   resetPoly(); showHint(''); saveHistory();
@@ -1332,7 +1642,7 @@ function handleFloodFill(e, canvasPt) {
   const off = document.createElement('canvas');
   off.width = cw; off.height = ch;
   const octx = off.getContext('2d');
-  octx.fillStyle = '#f5f0e8';           // canvas-wrap 底色（無牆壁的空白區）
+  octx.fillStyle = '#f7f6f4';   // V7：必須與 .canvas-wrap 底色一致           // canvas-wrap 底色（無牆壁的空白區）
   octx.fillRect(0, 0, cw, ch);
   octx.drawImage(canvas.lowerCanvasEl, 0, 0, cw, ch); // 縮放至邏輯像素
 
@@ -1351,32 +1661,49 @@ function handleFloodFill(e, canvasPt) {
   const mask = floodFillScanline(pix, sx, sy, target, 32, cw, ch);
 
   // 在填色 canvas 上只畫遮罩像素
-  const fc = document.createElement('canvas');
-  fc.width = cw; fc.height = ch;
-  const fctx = fc.getContext('2d');
-  const fd = fctx.createImageData(cw, ch);
-  let count = 0;
+  // ── V8：先掃出著色範圍，只輸出那一塊 ──
+  //     舊版輸出整張畫布尺寸的圖，導致選取框大到離譜（周圍全是透明像素）。
+  let minX = cw, minY = ch, maxX = -1, maxY = -1, count = 0;
   for (let i = 0; i < mask.length; i++) {
     if (!mask[i]) continue;
     count++;
-    const idx = i * 4;
-    fd.data[idx]   = rgb[0];
-    fd.data[idx+1] = rgb[1];
-    fd.data[idx+2] = rgb[2];
-    fd.data[idx+3] = 220;
+    const x = i % cw, y = (i / cw) | 0;
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
   }
   if (count === 0) return;
+
+  const bw = maxX - minX + 1, bh = maxY - minY + 1;
+  const fc = document.createElement('canvas');
+  fc.width = bw; fc.height = bh;
+  const fctx = fc.getContext('2d');
+  const fd = fctx.createImageData(bw, bh);
+  for (let y = minY; y <= maxY; y++) {
+    for (let x = minX; x <= maxX; x++) {
+      if (!mask[y * cw + x]) continue;
+      const idx = ((y - minY) * bw + (x - minX)) * 4;
+      fd.data[idx]   = rgb[0];
+      fd.data[idx+1] = rgb[1];
+      fd.data[idx+2] = rgb[2];
+      fd.data[idx+3] = 220;
+    }
+  }
   fctx.putImageData(fd, 0, 0);
 
-  // 把填色結果加入 Fabric（映射回 canvas 座標空間）
+  // 把填色結果加入 Fabric（映射回 canvas 座標空間；left/top 要加上裁切位移）
   fabric.Image.fromURL(fc.toDataURL(), (img) => {
     img.set({
-      left:    -vt[4] / vt[0],
-      top:     -vt[5] / vt[3],
+      left:    (-vt[4] / vt[0]) + minX / vt[0],
+      top:     (-vt[5] / vt[3]) + minY / vt[3],
       scaleX:  1 / vt[0],
       scaleY:  1 / vt[3],
       selectable: true,
       evented:    true,
+      // V8：圖已裁切到實際著色範圍，選取框不再過大。
+      //     仍保留 perPixelTargetFind——凹形/鏤空的填色，透明處依然不該吃點擊。
+      perPixelTargetFind: true,
       name: '__fill__'
     });
     canvas.add(img);
@@ -1442,7 +1769,8 @@ function hexToRGB(hex) {
 // ══════════════════════════════════════
 function setMode(m) {
   cancelDraw(); mode = m;
-  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+  clearSnapMarker();   // V5：換模式時清掉殘留的吸附提示
+  document.querySelectorAll('.tool-btn, .ft-btn').forEach(b => b.classList.remove('active'));  // V6：工具列已搬到 .ft-btn
   const btn = document.getElementById('btn-' + m); if (btn) btn.classList.add('active');
 
   const isDrawing = (m !== 'select');
@@ -1461,11 +1789,12 @@ function setMode(m) {
     canvas.defaultCursor = 'crosshair';
     document.getElementById('propPanel').style.display = 'none';
   } else {
-    // 回到選取模式，恢復所有物件可互動
+    // 回到選取模式，恢復所有物件可互動（V5：已鎖定的維持鎖住，不要被還原）
     canvas.forEachObject(o => {
       if (o.name !== '__bg_image__') {
-        o.selectable = true;
-        o.evented = true;
+        const unlocked = !o.__locked;
+        o.selectable = unlocked;
+        o.evented = unlocked;
       }
     });
     canvas.selection = true;
@@ -1490,7 +1819,7 @@ function addRoom() {
   canvas.add(r); canvas.setActiveObject(r); if (window.innerWidth<=768) closeSidebar();
 }
 function addText() {
-  const t = new fabric.IText('房間名稱', { left:snap(cx()-40),top:snap(cy()-12),fontSize:18,fill:'#333',fontFamily:'Microsoft JhengHei' });
+  const t = new fabric.IText('房間名稱', { left:snap(cx()-40),top:snap(cy()-12),fontSize:18,fill:'#1a1a2e',fontFamily:'Microsoft JhengHei' });
   canvas.add(t); canvas.setActiveObject(t); if (window.innerWidth<=768) closeSidebar();
 }
 function addDimension() {
@@ -1498,7 +1827,7 @@ function addDimension() {
     new fabric.Line([0,0,100,0],{stroke:'#e94560',strokeWidth:2}),
     new fabric.Line([0,-6,0,6],{stroke:'#e94560',strokeWidth:2}),
     new fabric.Line([100,-6,100,6],{stroke:'#e94560',strokeWidth:2}),
-    new fabric.IText('___cm',{left:28,top:-22,fontSize:12,fill:'#e94560',fontFamily:'Microsoft JhengHei'})
+    new fabric.IText('___ M',{left:30,top:-22,fontSize:12,fill:'#e94560',fontFamily:'Microsoft JhengHei'})   // V8：房仲報坪數/尺寸習慣用公尺
   ], {left:snap(cx()-50),top:snap(cy())});
   canvas.add(g); canvas.setActiveObject(g); if (window.innerWidth<=768) closeSidebar();
 }
@@ -1509,178 +1838,330 @@ function c(obj) { return Object.assign(obj, { originX:'center', originY:'center'
 // 物件工廠（與 V3.3 相同）
 // ══════════════════════════════════════
 const OBJS = {
+  // ══════════ V8 房仲加強素材（品項為通用常識，圖形全部自繪）══════════
+  coffeetable: () => new fabric.Group([
+    new fabric.Rect({width:90,height:60,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:2,rx:3})
+  ],{left:snap(cx()-45),top:snap(cy()-30)}),
+  tvcabinet: () => new fabric.Group([
+    new fabric.Rect({width:160,height:45,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:2}),
+    new fabric.Line([53,0,53,45],{stroke:'#1a1a2e',strokeWidth:1.2}),
+    new fabric.Line([107,0,107,45],{stroke:'#1a1a2e',strokeWidth:1.2})
+  ],{left:snap(cx()-80),top:snap(cy()-22)}),
+  nightstand: () => new fabric.Group([
+    new fabric.Rect({width:45,height:40,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:2}),
+    new fabric.Line([6,20,39,20],{stroke:'#1a1a2e',strokeWidth:1.2})
+  ],{left:snap(cx()-22),top:snap(cy()-20)}),
+  vanity: () => new fabric.Group([
+    new fabric.Rect({width:110,height:45,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:2}),
+    new fabric.Rect({left:28,top:-4,width:54,height:4,fill:'#b0dcf5',stroke:'#1a1a2e',strokeWidth:1.2})
+  ],{left:snap(cx()-55),top:snap(cy()-22)}),
+  chair: () => new fabric.Group([
+    new fabric.Rect({width:45,height:45,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:2,rx:3}),
+    new fabric.Line([4,4,41,4],{stroke:'#1a1a2e',strokeWidth:3})
+  ],{left:snap(cx()-22),top:snap(cy()-22)}),
+  bookshelf: () => new fabric.Group([
+    new fabric.Rect({width:90,height:35,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:2}),
+    new fabric.Line([30,0,30,35],{stroke:'#1a1a2e',strokeWidth:1.2}),
+    new fabric.Line([60,0,60,35],{stroke:'#1a1a2e',strokeWidth:1.2})
+  ],{left:snap(cx()-45),top:snap(cy()-17)}),
+  shoecab: () => new fabric.Group([
+    new fabric.Rect({width:90,height:35,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:2}),
+    new fabric.Line([0,12,90,12],{stroke:'#1a1a2e',strokeWidth:1.2}),
+    new fabric.Line([0,24,90,24],{stroke:'#1a1a2e',strokeWidth:1.2})
+  ],{left:snap(cx()-45),top:snap(cy()-17)}),
+  storage: () => new fabric.Group([
+    new fabric.Rect({width:80,height:45,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:2}),
+    new fabric.Line([40,0,40,45],{stroke:'#1a1a2e',strokeWidth:1.2})
+  ],{left:snap(cx()-40),top:snap(cy()-22)}),
+  island: () => new fabric.Group([
+    new fabric.Rect({width:180,height:90,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:3,rx:2}),
+    new fabric.Rect({left:12,top:12,width:156,height:66,fill:'transparent',stroke:'#1a1a2e',strokeWidth:1.2,strokeDashArray:[4,3]})
+  ],{left:snap(cx()-90),top:snap(cy()-45)}),
+  aircon: () => new fabric.Group([
+    new fabric.Rect({width:80,height:32,fill:'#e6e4e0',stroke:'#1a1a2e',strokeWidth:2,rx:2}),
+    new fabric.Circle({left:20,top:3,radius:13,fill:'transparent',stroke:'#1a1a2e',strokeWidth:1.2}),
+    new fabric.Line([52,7,74,7],{stroke:'#1a1a2e',strokeWidth:1.2}),
+    new fabric.Line([52,14,74,14],{stroke:'#1a1a2e',strokeWidth:1.2}),
+    new fabric.Line([52,21,74,21],{stroke:'#1a1a2e',strokeWidth:1.2})
+  ],{left:snap(cx()-40),top:snap(cy()-16)}),
+  waterheater: () => new fabric.Group([
+    new fabric.Rect({width:40,height:60,fill:'#e6e4e0',stroke:'#1a1a2e',strokeWidth:2,rx:3}),
+    new fabric.Circle({left:12,top:12,radius:8,fill:'transparent',stroke:'#1a1a2e',strokeWidth:1.2}),
+    new fabric.Line([8,44,32,44],{stroke:'#1a1a2e',strokeWidth:1.2})
+  ],{left:snap(cx()-20),top:snap(cy()-30)}),
+  washer: () => new fabric.Group([
+    new fabric.Rect({width:60,height:60,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:2,rx:2}),
+    new fabric.Circle({left:14,top:16,radius:16,fill:'transparent',stroke:'#1a1a2e',strokeWidth:2}),
+    new fabric.Line([8,7,26,7],{stroke:'#1a1a2e',strokeWidth:1.2})
+  ],{left:snap(cx()-30),top:snap(cy()-30)}),
+  dryer: () => new fabric.Group([
+    new fabric.Rect({width:60,height:60,fill:'#e9e7e3',stroke:'#1a1a2e',strokeWidth:2,rx:2}),
+    new fabric.Circle({left:14,top:16,radius:16,fill:'transparent',stroke:'#1a1a2e',strokeWidth:2,strokeDashArray:[4,3]})
+  ],{left:snap(cx()-30),top:snap(cy()-30)}),
+  gasmeter: () => new fabric.Group([
+    new fabric.Rect({width:36,height:30,fill:'#e6e4e0',stroke:'#1a1a2e',strokeWidth:2,rx:2}),
+    new fabric.Circle({left:10,top:7,radius:8,fill:'transparent',stroke:'#1a1a2e',strokeWidth:1.2})
+  ],{left:snap(cx()-18),top:snap(cy()-15)}),
+  shrine: () => new fabric.Group([
+    new fabric.Rect({width:120,height:50,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:3}),
+    new fabric.Rect({left:14,top:-11,width:92,height:11,fill:'#e6e4e0',stroke:'#1a1a2e',strokeWidth:2}),
+    new fabric.Line([40,0,40,50],{stroke:'#1a1a2e',strokeWidth:1.2}),
+    new fabric.Line([80,0,80,50],{stroke:'#1a1a2e',strokeWidth:1.2})
+  ],{left:snap(cx()-60),top:snap(cy()-20)}),
+  homelift: () => new fabric.Group([
+    new fabric.Rect({width:110,height:110,fill:'transparent',stroke:'#1a1a2e',strokeWidth:3}),
+    new fabric.Line([55,0,55,110],{stroke:'#1a1a2e',strokeWidth:1.2,strokeDashArray:[5,4]}),
+    new fabric.Path('M 0 18 L -10 0 L 10 0 Z',{fill:'#1a1a2e',stroke:'none',left:45,top:26}),
+    new fabric.Path('M 0 0 L -10 18 L 10 18 Z',{fill:'transparent',stroke:'#1a1a2e',strokeWidth:2,left:45,top:66})
+  ],{left:snap(cx()-55),top:snap(cy()-55)}),
+  landing: () => new fabric.Group([
+    new fabric.Rect({width:120,height:60,fill:'#eceae6',stroke:'#1a1a2e',strokeWidth:2}),
+    new fabric.Line([0,30,120,30],{stroke:'#1a1a2e',strokeWidth:1.2,strokeDashArray:[4,3]})
+  ],{left:snap(cx()-60),top:snap(cy()-30)}),
+  understair: () => new fabric.Group([
+    new fabric.Path('M 0 60 L 0 0 L 90 60 Z',{fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:2}),
+    new fabric.Line([30,60,30,40],{stroke:'#1a1a2e',strokeWidth:1.2})
+  ],{left:snap(cx()-45),top:snap(cy()-30)}),
+  ustair: () => {
+    const items=[];
+    for(let i=0;i<5;i++) items.push(new fabric.Rect({left:0,top:i*14,width:52,height:14,fill:i%2?'#e6e4e0':'#f0eeea',stroke:'#1a1a2e',strokeWidth:1.2}));
+    for(let i=0;i<5;i++) items.push(new fabric.Rect({left:66,top:(4-i)*14,width:52,height:14,fill:i%2?'#e6e4e0':'#f0eeea',stroke:'#1a1a2e',strokeWidth:1.2}));
+    items.push(new fabric.Rect({left:52,top:0,width:14,height:70,fill:'#eceae6',stroke:'#1a1a2e',strokeWidth:1.2}));
+    return new fabric.Group(items,{left:snap(cx()-59),top:snap(cy()-35)});
+  },
+  plant: () => new fabric.Group([
+    new fabric.Circle({radius:26,fill:'transparent',stroke:'#1a1a2e',strokeWidth:2}),
+    new fabric.Circle({left:14,top:14,radius:12,fill:'#dfe9dc',stroke:'#1a1a2e',strokeWidth:1.2})
+  ],{left:snap(cx()-26),top:snap(cy()-26)}),
+  bicycle: () => new fabric.Group([
+    new fabric.Circle({left:0,top:14,radius:15,fill:'transparent',stroke:'#1a1a2e',strokeWidth:2}),
+    new fabric.Circle({left:52,top:14,radius:15,fill:'transparent',stroke:'#1a1a2e',strokeWidth:2}),
+    new fabric.Path('M 0 21 L 19 0 L 37 21 M 19 0 L 25 21',{fill:'transparent',stroke:'#1a1a2e',strokeWidth:2,left:15,top:8})
+  ],{left:snap(cx()-41),top:snap(cy()-22)}),
+
   door: () => new fabric.Group([
-    new fabric.Line([0,0,0,60],{stroke:'#1a1a2e',strokeWidth:5}),
+    new fabric.Line([0,0,0,60],{stroke:'#1a1a2e',strokeWidth:3}),
     new fabric.Line([0,60,60,60],{stroke:'#1a1a2e',strokeWidth:3}),
     new fabric.Path('M 0 0 A 60 60 0 0 1 60 60',{fill:'transparent',stroke:'#1a1a2e',strokeWidth:2,strokeDashArray:[5,3]})
   ],{left:snap(cx()-30),top:snap(cy()-60)}),
 
   'door-slide': () => new fabric.Group([
-    new fabric.Rect({width:80,height:8,fill:'#ddd',stroke:'#888',strokeWidth:1}),
-    new fabric.Rect({left:0,top:8,width:36,height:50,fill:'#f0f0f0',stroke:'#1a1a2e',strokeWidth:2.5,rx:2}),
-    new fabric.Rect({left:38,top:8,width:36,height:50,fill:'#f0f0f0',stroke:'#1a1a2e',strokeWidth:2.5,rx:2,opacity:0.7}),
-    new fabric.Text('←',{left:6,top:24,fontSize:14,fill:'#888',fontFamily:'Arial'}),
-    new fabric.Text('→',{left:54,top:24,fontSize:14,fill:'#888',fontFamily:'Arial'})
+    new fabric.Rect({width:80,height:8,fill:'#eceae6',stroke:'#1a1a2e',strokeWidth:1.2}),
+    new fabric.Rect({left:0,top:8,width:36,height:50,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:2,rx:2}),
+    new fabric.Rect({left:38,top:8,width:36,height:50,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:2,rx:2,opacity:0.7}),
+    new fabric.Text('←',{left:6,top:24,fontSize:14,fill:'#8a877f',fontFamily:'Arial'}),
+    new fabric.Text('→',{left:54,top:24,fontSize:14,fill:'#8a877f',fontFamily:'Arial'})
   ],{left:snap(cx()-40),top:snap(cy()-30)}),
 
   window: () => new fabric.Group([
-    new fabric.Rect({width:80,height:12,fill:'white',stroke:'#1a1a2e',strokeWidth:2.5}),
+    new fabric.Rect({width:80,height:12,fill:'#ffffff',stroke:'#1a1a2e',strokeWidth:2}),
     new fabric.Rect({left:2,top:2,width:76,height:8,fill:'#b3d9f5'}),
-    new fabric.Line([40,0,40,12],{stroke:'#1a1a2e',strokeWidth:1.5})
+    new fabric.Line([40,0,40,12],{stroke:'#1a1a2e',strokeWidth:1.2})
   ],{left:snap(cx()-40),top:snap(cy()-6)}),
 
   balcony: () => {
+    // V8 修正：舊版用 4 條等距滿高直線，那是樓梯踏階的畫法，看起來像樓梯。
+    //          改用建築圖的標準表示：外緣雙線欄杆 + 短欄杆柱。
     const W=100,H=50,items=[];
-    items.push(new fabric.Rect({width:W,height:H,fill:'rgba(176,220,245,0.15)',stroke:'#1a1a2e',strokeWidth:3}));
-    for(let i=1;i<=4;i++) items.push(new fabric.Line([i*(W/5),0,i*(W/5),H],{stroke:'#4a9fc4',strokeWidth:1.5,opacity:0.8}));
-    items.push(new fabric.Line([0,H/2,W,H/2],{stroke:'#4a9fc4',strokeWidth:1,strokeDashArray:[4,3],opacity:0.6}));
-    items.push(new fabric.Line([0,0,W,0],{stroke:'#1a1a2e',strokeWidth:4}));
-    items.push(new fabric.Line([0,H,W,H],{stroke:'#1a1a2e',strokeWidth:4}));
+    items.push(new fabric.Rect({width:W,height:H,fill:'rgba(176,220,245,0.10)',stroke:'#1a1a2e',strokeWidth:1.2}));
+    items.push(new fabric.Line([0,0,W,0],{stroke:'#1a1a2e',strokeWidth:3}));          // 貼建築那側＝牆
+    items.push(new fabric.Line([0,H,W,H],{stroke:'#1a1a2e',strokeWidth:2}));        // 外緣欄杆·外線
+    items.push(new fabric.Line([0,H-6,W,H-6],{stroke:'#1a1a2e',strokeWidth:2}));    // 外緣欄杆·內線
+    for(let i=1;i<=6;i++) items.push(new fabric.Line([i*(W/7),H-6,i*(W/7),H],{stroke:'#1a1a2e',strokeWidth:1.2}));  // 欄杆柱（只在欄杆帶內，不滿高）
+    items.push(new fabric.Line([0,0,0,H],{stroke:'#1a1a2e',strokeWidth:2}));        // 兩側
+    items.push(new fabric.Line([W,0,W,H],{stroke:'#1a1a2e',strokeWidth:2}));
     return new fabric.Group(items,{left:snap(cx()-50),top:snap(cy()-25)});
   },
 
   'balcony-semi': () => new fabric.Group([
     new fabric.Path('M -55 0 A 55 55 0 0 1 55 0', {fill:'rgba(176,220,245,0.25)',stroke:'#1a1a2e',strokeWidth:3}),
-    new fabric.Line([-55,0,55,0],{stroke:'#1a1a2e',strokeWidth:5})
+    new fabric.Line([-55,0,55,0],{stroke:'#1a1a2e',strokeWidth:3})
   ],{left:snap(cx()-55),top:snap(cy()-55)}),
 
-  pillar: () => new fabric.Group([
-    new fabric.Rect({width:30,height:30,fill:'#888',stroke:'#333',strokeWidth:2}),
-    new fabric.Rect({left:5,top:5,width:20,height:20,fill:'#aaa'})
-  ],{left:snap(cx()-15),top:snap(cy()-15)}),
+  pillar: () => {
+    // V9.1 修正：舊版是灰色空心方框（#888/#333/#aaa，V8 統一製圖語言時漏改），
+    //           跟陽台等任何方形素材都分不出來。
+    //           建築圖的標準畫法是「實心填滿」——全圖只有柱子是實心，一眼可辨。
+    const S = 32;
+    return new fabric.Group([
+      new fabric.Rect({width:S,height:S,fill:'#1a1a2e',stroke:'#1a1a2e',strokeWidth:1.2}),
+      // 內側留一圈極細白線＝RC 柱的斷面表示，避免在深色牆邊糊成一塊
+      new fabric.Rect({left:3,top:3,width:S-6,height:S-6,fill:'',stroke:'rgba(255,255,255,0.22)',strokeWidth:1})
+    ],{left:snap(cx()-S/2),top:snap(cy()-S/2)});
+  },
 
   compass: () => {
-    const R=32;
-    return new fabric.Group([
-      c(new fabric.Circle({radius:R,fill:'white',stroke:'#1a1a2e',strokeWidth:2.5,left:0,top:0})),
-      c(new fabric.Path('M 0 -28 L 8 -5 L 0 -11 L -8 -5 Z',{fill:'#1a1a2e',stroke:'none',left:0,top:0})),
-      c(new fabric.Path('M 0 28 L 8 5 L 0 11 L -8 5 Z',{fill:'white',stroke:'#1a1a2e',strokeWidth:1.5,left:0,top:0})),
-      c(new fabric.Circle({radius:4,fill:'white',stroke:'#1a1a2e',strokeWidth:1.5,left:0,top:0})),
-      c(new fabric.Text('N',{left:0,top:-(R+12),fontSize:11,fill:'#1a1a2e',fontWeight:'bold',fontFamily:'Arial'})),
-      c(new fabric.Text('S',{left:0,top:R+10,fontSize:11,fill:'#1a1a2e',fontFamily:'Arial'})),
-      c(new fabric.Text('E',{left:R+10,top:0,fontSize:10,fill:'#1a1a2e',fontFamily:'Arial'})),
-      c(new fabric.Text('W',{left:-(R+16),top:0,fontSize:10,fill:'#1a1a2e',fontFamily:'Arial'})),
-    ],{left:snap(cx()),top:snap(cy())});
+    // V8：航海羅盤玫瑰——八角星、每角明暗分半（受光/背光），這是羅盤的傳統畫法
+    const it = [], R = 46;
+    it.push(c(new fabric.Circle({radius:R, fill:'#ffffff', stroke:'#1a1a2e', strokeWidth:2, left:0, top:0})));
+    it.push(c(new fabric.Circle({radius:R-6, fill:'transparent', stroke:'#1a1a2e', strokeWidth:1.2, left:0, top:0})));
+    // 刻度：每 15 度一小格，正方位加長
+    for (let d = 0; d < 360; d += 15) {
+      const a = (d - 90) * Math.PI / 180, long = (d % 45 === 0);
+      const r1 = R - 6, r2 = R - (long ? 12 : 9);
+      it.push(c(new fabric.Line([r1*Math.cos(a), r1*Math.sin(a), r2*Math.cos(a), r2*Math.sin(a)],
+        {stroke:'#1a1a2e', strokeWidth: long ? 1.2 : 1.2, opacity: long ? 1 : 0.45, left:0, top:0})));
+    }
+    // 八個尖角：正方位長、斜方位短；每角左右分成受光(白)與背光(實心)
+    const pt = (ang, r) => [r*Math.cos(ang), r*Math.sin(ang)];
+    for (let i = 0; i < 8; i++) {
+      const a = (i*45 - 90) * Math.PI / 180;
+      const long = (i % 2 === 0);
+      const [tx, ty] = pt(a, long ? R-14 : R-26);
+      const [lx, ly] = pt(a + Math.PI/2, 7);
+      const [rx, ry] = pt(a - Math.PI/2, 7);
+      it.push(c(new fabric.Path(`M 0 0 L ${tx} ${ty} L ${lx} ${ly} Z`,
+        {fill:'#1a1a2e', stroke:'#1a1a2e', strokeWidth:0.8, left:0, top:0})));   // 背光半：實心
+      it.push(c(new fabric.Path(`M 0 0 L ${tx} ${ty} L ${rx} ${ry} Z`,
+        {fill:'#ffffff', stroke:'#1a1a2e', strokeWidth:0.8, left:0, top:0})));   // 受光半：留白
+    }
+    it.push(c(new fabric.Circle({radius:4, fill:'#ffffff', stroke:'#1a1a2e', strokeWidth:1.2, left:0, top:0})));
+    // N 字：放在圈外正上方
+    it.push(c(new fabric.Text('N', {fontSize:15, fill:'#1a1a2e', fontFamily:'Georgia, serif',
+      fontWeight:'bold', left:0, top:-(R+13)})));
+    return new fabric.Group(it, {left:snap(cx()), top:snap(cy())});
   },
 
   'stair-straight': () => {
-    const steps=[];
-    for(let i=0;i<7;i++) steps.push(new fabric.Rect({left:0,top:i*14,width:60,height:14,fill:i%2===0?'#ddd':'#c8c8c8',stroke:'#888',strokeWidth:1}));
-    steps.push(new fabric.Text('↑',{left:22,top:2,fontSize:14,fill:'#666',fontFamily:'Arial'}));
-    return new fabric.Group(steps,{left:snap(cx()-30),top:snap(cy()-49)});
+    // 直梯＝踏階 ＋ 上行動線（起點圓點 → 箭頭朝上）。不畫折斷線（見下方註解）。
+    const it=[], W=60, T=14, N=7, H=N*T;
+    for(let i=0;i<N;i++) it.push(new fabric.Rect({left:0,top:i*T,width:W,height:T,fill:'#f7f6f4',stroke:'#1a1a2e',strokeWidth:1.2}));
+    it.push(new fabric.Rect({left:0,top:0,width:W,height:H,fill:'transparent',stroke:'#1a1a2e',strokeWidth:2}));
+    // 上行動線：起點圓點 → 直線 → 箭頭朝上
+    it.push(new fabric.Circle({radius:2.5,fill:'#1a1a2e',left:W/2-2.5,top:H-11}));
+    it.push(new fabric.Line([W/2,H-8,W/2,11],{stroke:'#1a1a2e',strokeWidth:1.2}));
+    it.push(new fabric.Path('M 0 0 L -5 9 L 5 9 Z',{fill:'#1a1a2e',stroke:'none',left:W/2-5,top:2}));
+    // V9：折斷線已拿掉——那是施工圖給師傅看的慣例，
+    //     一般房仲格局圖（591 那種）不放，客戶也看不懂，反而像雜線。
+    return new fabric.Group(it,{left:snap(cx()-W/2),top:snap(cy()-H/2)});
   },
 
   'stair-spiral': () => {
-    const items=[];
-    items.push(c(new fabric.Circle({radius:45,fill:'#e8e8e8',stroke:'#888',strokeWidth:2,left:0,top:0})));
-    items.push(c(new fabric.Circle({radius:12,fill:'#bbb',stroke:'#666',strokeWidth:2,left:0,top:0})));
-    for(let i=0;i<8;i++){const a=(i*45)*Math.PI/180;items.push(c(new fabric.Line([12*Math.cos(a),12*Math.sin(a),45*Math.cos(a),45*Math.sin(a)],{stroke:'#999',strokeWidth:1.5,left:0,top:0})));}
-    items.push(c(new fabric.Text('旋梯',{left:0,top:0,fontSize:10,fill:'#555',fontFamily:'Microsoft JhengHei'})));
-    return new fabric.Group(items,{left:snap(cx()),top:snap(cy())});
+    // V8：旋轉梯＝外圈＋中柱＋放射踏階＋上行箭頭（拿掉文字標籤，改用符號語言）
+    const it=[];
+    it.push(c(new fabric.Circle({radius:45,fill:'#f7f6f4',stroke:'#1a1a2e',strokeWidth:2,left:0,top:0})));
+    for(let i=0;i<10;i++){
+      const a=(i*36)*Math.PI/180;
+      it.push(c(new fabric.Line([13*Math.cos(a),13*Math.sin(a),45*Math.cos(a),45*Math.sin(a)],{stroke:'#1a1a2e',strokeWidth:1.2,left:0,top:0})));
+    }
+    it.push(c(new fabric.Circle({radius:13,fill:'#dedbd5',stroke:'#1a1a2e',strokeWidth:2,left:0,top:0})));
+    it.push(c(new fabric.Path('M 30 0 A 30 30 0 1 1 -8 -29',{fill:'transparent',stroke:'#1a1a2e',strokeWidth:1.2,left:0,top:0})));
+    it.push(c(new fabric.Path('M 0 0 L 9 5 L 3 10 Z',{fill:'#1a1a2e',stroke:'none',left:-12,top:-33})));
+    return new fabric.Group(it,{left:snap(cx()),top:snap(cy())});
   },
 
   'stair-l': () => {
-    const items=[];
-    for(let i=0;i<4;i++) items.push(new fabric.Rect({left:0,top:i*14,width:56,height:14,fill:i%2===0?'#ddd':'#c8c8c8',stroke:'#888',strokeWidth:1}));
-    for(let i=0;i<3;i++) items.push(new fabric.Rect({left:56+i*14,top:42,width:14,height:56,fill:i%2===0?'#ddd':'#c8c8c8',stroke:'#888',strokeWidth:1}));
-    return new fabric.Group(items,{left:snap(cx()-50),top:snap(cy()-50)});
+    // V8 修正：上段直行(垂直) → 轉角平台 → 右段橫行。
+    //          箭頭必須沿「實際梯段中心線」走，舊版從平台中間起步是錯的。
+    const it=[], T=14, WA=56, HA=56;      // A 段：4 階，垂直走
+    for(let i=0;i<4;i++) it.push(new fabric.Rect({left:0,top:i*T,width:WA,height:T,fill:'#f7f6f4',stroke:'#1a1a2e',strokeWidth:1.2}));
+    it.push(new fabric.Rect({left:0,top:HA,width:WA,height:56,fill:'#eceae6',stroke:'#1a1a2e',strokeWidth:1.2}));   // 轉角平台
+    for(let i=0;i<3;i++) it.push(new fabric.Rect({left:WA+i*T,top:HA,width:T,height:56,fill:'#f7f6f4',stroke:'#1a1a2e',strokeWidth:1.2}));  // B 段：3 階，橫走
+    it.push(new fabric.Rect({left:0,top:0,width:WA+3*T,height:HA+56,fill:'transparent',stroke:'#1a1a2e',strokeWidth:2}));
+    // 上行動線：從 B 段外端(右) → 穿過平台 → 沿 A 段往上，箭頭朝上
+    const yB = HA + 28, xA = WA/2;
+    it.push(new fabric.Circle({radius:2.5,fill:'#1a1a2e',left:WA+3*T-8,top:yB-2.5}));          // 起點圓點
+    it.push(new fabric.Line([WA+3*T-6, yB, xA, yB],{stroke:'#1a1a2e',strokeWidth:1.2}));       // 沿 B 段往左
+    it.push(new fabric.Line([xA, yB, xA, 8],{stroke:'#1a1a2e',strokeWidth:1.2}));              // 轉上，沿 A 段
+    it.push(new fabric.Path('M 0 0 L -5 9 L 5 9 Z',{fill:'#1a1a2e',stroke:'none',left:xA-5,top:2}));  // 箭頭朝上
+    return new fabric.Group(it,{left:snap(cx()-(WA+3*T)/2),top:snap(cy()-(HA+56)/2)});
   },
 
   toilet: () => new fabric.Group([
-    new fabric.Rect({left:5,top:0,width:36,height:18,fill:'#f0f0f0',stroke:'#888',strokeWidth:1.5,rx:3}),
-    new fabric.Ellipse({rx:20,ry:24,left:3,top:16,fill:'white',stroke:'#888',strokeWidth:1.5}),
-    new fabric.Ellipse({rx:17,ry:20,left:6,top:20,fill:'#f8f8f8',stroke:'#aaa',strokeWidth:1})
+    new fabric.Rect({left:5,top:0,width:36,height:18,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:1.2,rx:3}),
+    new fabric.Ellipse({rx:20,ry:24,left:3,top:16,fill:'#ffffff',stroke:'#1a1a2e',strokeWidth:1.2}),
+    new fabric.Ellipse({rx:17,ry:20,left:6,top:20,fill:'#f7f6f4',stroke:'#1a1a2e',strokeWidth:1.2})
   ],{left:snap(cx()-23),top:snap(cy()-32)}),
 
   bathtub: () => new fabric.Group([
-    new fabric.Rect({width:90,height:50,fill:'#e8f4ff',stroke:'#888',strokeWidth:2,rx:12}),
-    new fabric.Ellipse({rx:38,ry:18,left:7,top:7,fill:'#d0eaff',stroke:'#aaa',strokeWidth:1}),
-    new fabric.Circle({radius:4,left:76,top:21,fill:'#aaa'}),
-    new fabric.Rect({left:2,top:18,width:8,height:12,fill:'#ccc',rx:2})
+    new fabric.Rect({width:90,height:50,fill:'#e8f4ff',stroke:'#1a1a2e',strokeWidth:2,rx:12}),
+    new fabric.Ellipse({rx:38,ry:18,left:7,top:7,fill:'#d0eaff',stroke:'#1a1a2e',strokeWidth:1.2}),
+    new fabric.Circle({radius:4,left:76,top:21,fill:'#b0aca3'}),
+    new fabric.Rect({left:2,top:18,width:8,height:12,fill:'#d4d0c8',rx:2})
   ],{left:snap(cx()-45),top:snap(cy()-25)}),
 
   sink: () => new fabric.Group([
-    new fabric.Rect({width:50,height:45,fill:'#f5f5f5',stroke:'#888',strokeWidth:2,rx:4}),
-    new fabric.Ellipse({rx:18,ry:15,left:7,top:10,fill:'white',stroke:'#aaa',strokeWidth:1.5}),
-    new fabric.Rect({width:5,height:10,left:22,top:1,fill:'#ccc'})
+    new fabric.Rect({width:50,height:45,fill:'#f5f5f5',stroke:'#1a1a2e',strokeWidth:2,rx:4}),
+    new fabric.Ellipse({rx:18,ry:15,left:7,top:10,fill:'#ffffff',stroke:'#1a1a2e',strokeWidth:1.2}),
+    new fabric.Rect({width:5,height:10,left:22,top:1,fill:'#d4d0c8'})
   ],{left:snap(cx()-25),top:snap(cy()-22)}),
 
   shower: () => new fabric.Group([
-    new fabric.Rect({width:70,height:70,fill:'#e8f4ff',stroke:'#888',strokeWidth:2}),
-    new fabric.Circle({radius:7,left:28,top:28,fill:'#aaa',stroke:'#888',strokeWidth:1}),
-    new fabric.Line([28,31.5,42,31.5],{stroke:'#888',strokeWidth:1}),
-    new fabric.Line([35,24.5,35,38.5],{stroke:'#888',strokeWidth:1})
+    new fabric.Rect({width:70,height:70,fill:'#e8f4ff',stroke:'#1a1a2e',strokeWidth:2}),
+    new fabric.Circle({radius:7,left:28,top:28,fill:'#b0aca3',stroke:'#1a1a2e',strokeWidth:1.2}),
+    new fabric.Line([28,31.5,42,31.5],{stroke:'#1a1a2e',strokeWidth:1.2}),
+    new fabric.Line([35,24.5,35,38.5],{stroke:'#1a1a2e',strokeWidth:1.2})
   ],{left:snap(cx()-35),top:snap(cy()-35)}),
 
   stove: () => {
-    const mk=(lx,ly)=>new fabric.Circle({radius:12,left:lx,top:ly,fill:'#ccc',stroke:'#888',strokeWidth:1});
-    const dt=(lx,ly)=>new fabric.Circle({radius:3,left:lx,top:ly,fill:'#888'});
-    return new fabric.Group([new fabric.Rect({width:70,height:60,fill:'#f0f0f0',stroke:'#888',strokeWidth:2}),mk(8,8),mk(46,8),mk(8,38),mk(46,38),dt(17,17),dt(55,17),dt(17,47),dt(55,47)],{left:snap(cx()-35),top:snap(cy()-30)});
+    const mk=(lx,ly)=>new fabric.Circle({radius:12,left:lx,top:ly,fill:'#d4d0c8',stroke:'#1a1a2e',strokeWidth:1.2});
+    const dt=(lx,ly)=>new fabric.Circle({radius:3,left:lx,top:ly,fill:'#8a877f'});
+    return new fabric.Group([new fabric.Rect({width:70,height:60,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:2}),mk(8,8),mk(46,8),mk(8,38),mk(46,38),dt(17,17),dt(55,17),dt(17,47),dt(55,47)],{left:snap(cx()-35),top:snap(cy()-30)});
   },
 
   counter: () => new fabric.Group([
-    new fabric.Rect({width:100,height:55,fill:'#f5f5f5',stroke:'#888',strokeWidth:2}),
-    new fabric.Rect({left:8,top:8,width:38,height:32,fill:'#ddd',stroke:'#aaa',strokeWidth:1.5,rx:4}),
-    new fabric.Rect({left:20,top:4,width:5,height:8,fill:'#bbb'})
+    new fabric.Rect({width:100,height:55,fill:'#f5f5f5',stroke:'#1a1a2e',strokeWidth:2}),
+    new fabric.Rect({left:8,top:8,width:38,height:32,fill:'#eceae6',stroke:'#1a1a2e',strokeWidth:1.2,rx:4}),
+    new fabric.Rect({left:20,top:4,width:5,height:8,fill:'#dedbd5'})
   ],{left:snap(cx()-50),top:snap(cy()-27)}),
 
   fridge: () => new fabric.Group([
-    new fabric.Rect({width:55,height:80,fill:'#f8f8f8',stroke:'#888',strokeWidth:2,rx:4}),
-    new fabric.Line([0,35,55,35],{stroke:'#aaa',strokeWidth:1.5}),
-    new fabric.Rect({left:40,top:12,width:8,height:12,fill:'#ccc',rx:2}),
-    new fabric.Rect({left:40,top:50,width:8,height:20,fill:'#ccc',rx:2})
+    new fabric.Rect({width:55,height:80,fill:'#f7f6f4',stroke:'#1a1a2e',strokeWidth:2,rx:4}),
+    new fabric.Line([0,35,55,35],{stroke:'#1a1a2e',strokeWidth:1.2}),
+    new fabric.Rect({left:40,top:12,width:8,height:12,fill:'#d4d0c8',rx:2}),
+    new fabric.Rect({left:40,top:50,width:8,height:20,fill:'#d4d0c8',rx:2})
   ],{left:snap(cx()-27),top:snap(cy()-40)}),
 
   'bed-single': () => new fabric.Group([
     new fabric.Rect({width:60,height:110,fill:'#F5DEB3',stroke:'#8B7355',strokeWidth:2,rx:3}),
-    new fabric.Rect({left:4,top:36,width:52,height:70,fill:'#E6E6FA',stroke:'#b0a0d0',strokeWidth:1,rx:3}),
-    new fabric.Rect({left:8,top:6,width:44,height:25,fill:'white',stroke:'#ddd',strokeWidth:1,rx:5})
+    new fabric.Rect({left:4,top:36,width:52,height:70,fill:'#E6E6FA',stroke:'#b0a0d0',strokeWidth:1.2,rx:3}),
+    new fabric.Rect({left:8,top:6,width:44,height:25,fill:'#ffffff',stroke:'#e2ded6',strokeWidth:1.2,rx:5})
   ],{left:snap(cx()-30),top:snap(cy()-55)}),
 
   'bed-double': () => new fabric.Group([
     new fabric.Rect({width:110,height:120,fill:'#F5DEB3',stroke:'#8B7355',strokeWidth:2,rx:3}),
-    new fabric.Rect({left:4,top:38,width:102,height:78,fill:'#E6E6FA',stroke:'#b0a0d0',strokeWidth:1,rx:3}),
-    new fabric.Line([55,38,55,116],{stroke:'#b0a0d0',strokeWidth:1}),
-    new fabric.Rect({left:6,top:5,width:45,height:28,fill:'white',stroke:'#ddd',strokeWidth:1,rx:5}),
-    new fabric.Rect({left:58,top:5,width:45,height:28,fill:'white',stroke:'#ddd',strokeWidth:1,rx:5})
+    new fabric.Rect({left:4,top:38,width:102,height:78,fill:'#E6E6FA',stroke:'#b0a0d0',strokeWidth:1.2,rx:3}),
+    new fabric.Line([55,38,55,116],{stroke:'#b0a0d0',strokeWidth:1.2}),
+    new fabric.Rect({left:6,top:5,width:45,height:28,fill:'#ffffff',stroke:'#e2ded6',strokeWidth:1.2,rx:5}),
+    new fabric.Rect({left:58,top:5,width:45,height:28,fill:'#ffffff',stroke:'#e2ded6',strokeWidth:1.2,rx:5})
   ],{left:snap(cx()-55),top:snap(cy()-60)}),
 
   sofa: () => new fabric.Group([
-    new fabric.Rect({width:100,height:25,fill:'#B0C4DE',stroke:'#708090',strokeWidth:1.5,rx:6}),
-    new fabric.Rect({top:22,width:100,height:40,fill:'#778899',stroke:'#708090',strokeWidth:1.5,rx:3}),
-    new fabric.Rect({left:-10,top:10,width:12,height:50,fill:'#B0C4DE',stroke:'#708090',strokeWidth:1.5,rx:3}),
-    new fabric.Rect({left:98,top:10,width:12,height:50,fill:'#B0C4DE',stroke:'#708090',strokeWidth:1.5,rx:3})
+    new fabric.Rect({width:100,height:25,fill:'#B0C4DE',stroke:'#708090',strokeWidth:1.2,rx:6}),
+    new fabric.Rect({top:22,width:100,height:40,fill:'#778899',stroke:'#708090',strokeWidth:1.2,rx:3}),
+    new fabric.Rect({left:-10,top:10,width:12,height:50,fill:'#B0C4DE',stroke:'#708090',strokeWidth:1.2,rx:3}),
+    new fabric.Rect({left:98,top:10,width:12,height:50,fill:'#B0C4DE',stroke:'#708090',strokeWidth:1.2,rx:3})
   ],{left:snap(cx()-60),top:snap(cy()-30)}),
 
   table: () => {
     const RX=50,RY=35,GAP=5,CW=30,CH=20;
     return new fabric.Group([
       c(new fabric.Ellipse({rx:RX,ry:RY,fill:'#DEB887',stroke:'#8B7355',strokeWidth:2,left:0,top:0})),
-      c(new fabric.Rect({width:CW,height:CH,fill:'#f0f0f0',stroke:'#999',strokeWidth:1.5,rx:3,left:0,top:-(RY+GAP+CH/2)})),
-      c(new fabric.Rect({width:CW,height:CH,fill:'#f0f0f0',stroke:'#999',strokeWidth:1.5,rx:3,left:0,top:RY+GAP+CH/2})),
-      c(new fabric.Rect({width:CH,height:CW,fill:'#f0f0f0',stroke:'#999',strokeWidth:1.5,rx:3,left:-(RX+GAP+CH/2),top:0})),
-      c(new fabric.Rect({width:CH,height:CW,fill:'#f0f0f0',stroke:'#999',strokeWidth:1.5,rx:3,left:RX+GAP+CH/2,top:0})),
+      c(new fabric.Rect({width:CW,height:CH,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:1.2,rx:3,left:0,top:-(RY+GAP+CH/2)})),
+      c(new fabric.Rect({width:CW,height:CH,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:1.2,rx:3,left:0,top:RY+GAP+CH/2})),
+      c(new fabric.Rect({width:CH,height:CW,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:1.2,rx:3,left:-(RX+GAP+CH/2),top:0})),
+      c(new fabric.Rect({width:CH,height:CW,fill:'#f0eeea',stroke:'#1a1a2e',strokeWidth:1.2,rx:3,left:RX+GAP+CH/2,top:0})),
     ],{left:snap(cx()-RX),top:snap(cy()-RY)});
   },
 
   desk: () => new fabric.Group([
     new fabric.Rect({width:100,height:55,fill:'#DEB887',stroke:'#8B7355',strokeWidth:2,rx:3}),
-    new fabric.Rect({left:60,top:8,width:32,height:38,fill:'#C9A87A',stroke:'#8B7355',strokeWidth:1,rx:2}),
-    new fabric.Rect({left:70,top:24,width:12,height:6,fill:'#aaa',rx:2})
+    new fabric.Rect({left:60,top:8,width:32,height:38,fill:'#C9A87A',stroke:'#8B7355',strokeWidth:1.2,rx:2}),
+    new fabric.Rect({left:70,top:24,width:12,height:6,fill:'#b0aca3',rx:2})
   ],{left:snap(cx()-50),top:snap(cy()-27)}),
 
   wardrobe: () => new fabric.Group([
     new fabric.Rect({width:100,height:55,fill:'#f0ebe0',stroke:'#8B7355',strokeWidth:2}),
-    new fabric.Line([50,0,50,55],{stroke:'#8B7355',strokeWidth:1.5}),
-    new fabric.Rect({left:13,top:22,width:22,height:8,fill:'#ccc',rx:3}),
-    new fabric.Rect({left:63,top:22,width:22,height:8,fill:'#ccc',rx:3})
+    new fabric.Line([50,0,50,55],{stroke:'#8B7355',strokeWidth:1.2}),
+    new fabric.Rect({left:13,top:22,width:22,height:8,fill:'#d4d0c8',rx:3}),
+    new fabric.Rect({left:63,top:22,width:22,height:8,fill:'#d4d0c8',rx:3})
   ],{left:snap(cx()-50),top:snap(cy()-27)}),
 
   // ── 幾何空間（參考 SHAPES.txt：Ellipse / Triangle / Hexagon / custom L-shape）
   'room-circle': () => new fabric.Circle({
     left: snap(cx()-70), top: snap(cy()-70),
     radius: 70,
-    fill: currentColor, stroke: '#1a1a2e', strokeWidth: 4,
+    fill: currentColor, stroke: '#1a1a2e', strokeWidth:3,
     name: '圓形房間'
   }),
 
@@ -1690,7 +2171,7 @@ const OBJS = {
       {x: ox,       y: oy - H/2},   // 頂點
       {x: ox + W/2, y: oy + H/2},   // 右下
       {x: ox - W/2, y: oy + H/2}    // 左下
-    ], { fill: currentColor, stroke: '#1a1a2e', strokeWidth: 4, opacity: 0.9, name: '三角形空間' });
+    ], { fill: currentColor, stroke: '#1a1a2e', strokeWidth:3, opacity: 0.9, name: '三角形空間' });
   },
 
   'room-hex': () => {
@@ -1700,7 +2181,7 @@ const OBJS = {
       const a = i * Math.PI / 3;
       return { x: ox + R*Math.cos(a), y: oy + R*Math.sin(a) };
     });
-    return new fabric.Polygon(pts, { fill: currentColor, stroke: '#1a1a2e', strokeWidth: 4, opacity: 0.9, name: '六邊形空間' });
+    return new fabric.Polygon(pts, { fill: currentColor, stroke: '#1a1a2e', strokeWidth:3, opacity: 0.9, name: '六邊形空間' });
   },
 
   'room-l': () => {
@@ -1714,19 +2195,40 @@ const OBJS = {
       {x: ox + W/2,      y: oy - H/2 + H2},
       {x: ox + W/2,      y: oy + H/2},
       {x: ox - W/2,      y: oy + H/2}
-    ], { fill: currentColor, stroke: '#1a1a2e', strokeWidth: 4, opacity: 0.9, name: 'L型空間' });
+    ], { fill: currentColor, stroke: '#1a1a2e', strokeWidth:3, opacity: 0.9, name: 'L型空間' });
   },
+};
+
+
+// V8：素材中文名對照——沒有這張表，圖層面板只能顯示「元件 1..N」，完全認不出誰是誰
+const OBJ_LABELS = {
+  door:'推門', 'door-slide':'拉門', window:'窗', balcony:'陽台', 'balcony-semi':'半圓陽台',
+  pillar:'柱子', compass:'指北針',
+  'stair-straight':'直梯', 'stair-spiral':'旋轉梯', 'stair-l':'L型梯',
+  ustair:'U型梯', landing:'樓梯平台', understair:'梯下收納', homelift:'家用電梯',
+  toilet:'馬桶', bathtub:'浴缸', sink:'洗手台', shower:'淋浴間',
+  stove:'瓦斯爐', counter:'流理台', fridge:'冰箱', island:'中島',
+  'bed-single':'單人床', 'bed-double':'雙人床', sofa:'沙發', table:'餐桌', desk:'書桌', wardrobe:'衣櫃',
+  coffeetable:'茶几', tvcabinet:'電視櫃', nightstand:'床頭櫃', vanity:'化妝台',
+  chair:'單椅', bookshelf:'書櫃', shoecab:'鞋櫃', storage:'收納櫃',
+  aircon:'冷氣室外機', waterheater:'熱水器', washer:'洗衣機', dryer:'烘衣機', gasmeter:'瓦斯表',
+  shrine:'神明桌', plant:'盆栽', bicycle:'自行車',
+  'room-circle':'圓形空間', 'room-triangle':'三角空間', 'room-hex':'六邊空間', 'room-l':'L型空間'
 };
 
 function addObj(type) {
   const fn = OBJS[type]; if (!fn) return;
-  canvas.add(fn()); canvas.setActiveObject(canvas.item(canvas.size()-1));
+  const o = fn();
+  o.name = OBJ_LABELS[type] || '元件';   // V8：帶上中文名，圖層面板才認得出來
+  canvas.add(o); canvas.setActiveObject(o);
   if (window.innerWidth<=768) closeSidebar();
 }
 
 // ══════════════════════════════════════
 // 圖層面板 (V3.5)
 // ══════════════════════════════════════
+let orthoDefault = true;   // V9：預設正交鎖定（按住 Alt 暫時解開）。
+                           //     舊版要按 Shift 才鎖 → 預設畫出來都是歪的。
 let layerDragSrc = null;
 let layerPanelDragging = false;
 let layerPanelDragOffX = 0, layerPanelDragOffY = 0;
@@ -1815,7 +2317,7 @@ function getObjDisplayName(obj, idx) {
     const txt = obj.text.slice(0, 12);
     return txt.length < obj.text.length ? txt + '…' : txt;
   }
-  if (obj.name) return obj.name;
+  if (obj.name && !obj.name.startsWith('__')) return obj.name;   // V8：排除系統內部標記
   return `${getObjTypeName(obj)} ${idx + 1}`;
 }
 
@@ -1862,6 +2364,8 @@ function refreshLayerPanel() {
         <div class="layer-name">${getObjDisplayName(obj, realIdx)}${blendBadge}${opPct}</div>
         <div class="layer-type">${getObjTypeName(obj)}</div>
       </div>
+      ${!isBg ? `<button class="layer-vis-btn" title="${obj.visible === false ? '顯示' : '隱藏'}" onclick="layerToggleVis(${realIdx})">${obj.visible === false ? '🙈' : '👁'}</button>` : ''}
+      ${!isBg ? `<button class="layer-vis-btn" title="${obj.__locked ? '解鎖' : '鎖定（避免誤拖）'}" onclick="layerToggleLock(${realIdx})">${obj.__locked ? '🔒' : '🔓'}</button>` : ''}
       ${!isBg ? `<button class="layer-vis-btn" title="刪除此物件" onclick="layerDeleteObj(${realIdx})">🗑</button>` : ''}
     `;
 
@@ -1906,6 +2410,33 @@ function refreshLayerPanel() {
 
     list.appendChild(item);
   });
+}
+
+// ══════════════════════════════════════
+// V5 圖層列：👁 顯示切換 ／ 🔒 鎖定
+//   鎖定的用途：牆畫完先鎖住，之後擺傢俱就不會誤拖到牆——
+//   這是畫多層格局圖時最容易出錯、也最花時間修的地方。
+// ══════════════════════════════════════
+function layerToggleVis(realIdx) {
+  const o = canvas.getObjects()[realIdx];
+  if (!o) return;
+  o.visible = (o.visible === false);
+  if (o === canvas.getActiveObject() && !o.visible) canvas.discardActiveObject();
+  canvas.renderAll(); saveHistory(); refreshLayerPanel();
+  showHint(o.visible ? '已顯示' : '已隱藏（存圖時不會出現）');
+  setTimeout(() => showHint(''), 1500);
+}
+
+function layerToggleLock(realIdx) {
+  const o = canvas.getObjects()[realIdx];
+  if (!o) return;
+  o.__locked = !o.__locked;
+  o.selectable = !o.__locked;
+  o.evented    = !o.__locked;
+  if (o.__locked && o === canvas.getActiveObject()) canvas.discardActiveObject();
+  canvas.renderAll(); saveHistory(); refreshLayerPanel();
+  showHint(o.__locked ? '已鎖定：不會被誤選、誤拖' : '已解鎖');
+  setTimeout(() => showHint(''), 1500);
 }
 
 function layerDeleteObj(realIdx) {
@@ -2001,6 +2532,23 @@ function addDisclaimer() {
 // ══════════════════════════════════════
 // 複製 / 貼上 / 複製物件 (V3.4 新增)
 // ══════════════════════════════════════
+// V9：全選——舊版沒實作，Ctrl+A 會被瀏覽器吃掉變成選取整頁文字
+function selectAll() {
+  if (mode !== 'select') setMode('select');   // 繪圖模式下物件被鎖住，先切回選取
+  const objs = canvas.getObjects().filter(o =>
+    !o._isHandle && o.name !== '__bg_image__' && !o.__locked && o.visible !== false);
+  canvas.discardActiveObject();
+  if (!objs.length) { showHint('畫布上沒有可選的物件'); setTimeout(()=>showHint(''),1500); return; }
+  if (objs.length === 1) {
+    canvas.setActiveObject(objs[0]);
+  } else {
+    canvas.setActiveObject(new fabric.ActiveSelection(objs, { canvas }));
+  }
+  canvas.renderAll(); showProp(); refreshLayerPanel();
+  showHint(`已全選 ${objs.length} 個物件（鎖定與隱藏的不列入）`);
+  setTimeout(()=>showHint(''),1800);
+}
+
 function copySelected() {
   const obj = canvas.getActiveObject();
   if (!obj || obj.name === '__bg_image__') return;
@@ -2119,9 +2667,16 @@ function applyFill(obj, color) {
 function showProp() {
   const obj = canvas.getActiveObject(); if (!obj) return;
   document.getElementById('propPanel').style.display = 'block';
-  const a = Math.round(obj.angle || 0);
-  document.getElementById('propAngle').value = a; document.getElementById('angleVal').textContent = a + '°';
-  document.getElementById('propLabel').value = obj.type === 'i-text' ? obj.text : (obj.name || '');
+  if (typeof expandRightPanelIfNeeded === 'function') expandRightPanelIfNeeded();
+  // V9：線段要顯示「方向角」，obj.angle（旋轉變換量）對線段永遠是 0，會誤導
+  const dirMode = hasHeading(obj);
+  const a = dirMode ? Math.round(headingOf(obj)) : Math.round(obj.angle || 0);
+  const lbl = document.getElementById('angleLabelText');
+  if (lbl) lbl.textContent = dirMode ? '方位角' : '旋轉角度';
+  const hintEl = document.getElementById('angleAxisHint');
+  if (hintEl) hintEl.textContent = dirMode ? '右0° 上90° 左180° 下270°' : '順時針轉幾度';
+  document.getElementById('propAngle').value = a; document.getElementById('angleNum').value = a;
+  document.getElementById('propLabel').value = obj.type === 'i-text' ? obj.text : ((obj.name && !obj.name.startsWith('__')) ? obj.name : '');
   const isDash = obj.strokeDashArray && obj.strokeDashArray.length > 0;
   document.getElementById('lineSolid').className = 'line-btn' + (isDash ? '' : ' active');
   document.getElementById('lineDash').className = 'line-btn' + (isDash ? ' active' : '');
@@ -2145,11 +2700,37 @@ function updateLabel() {
   canvas.renderAll();
   refreshLayerPanel();
 }
-function updateAngle() {
+function applyAngle(v, commit) {
   const obj = canvas.getActiveObject(); if (!obj) return;
-  const v = parseInt(document.getElementById('propAngle').value);
-  document.getElementById('angleVal').textContent = v + '°'; obj.set('angle', v); canvas.renderAll();
+  v = Math.max(0, Math.min(360, isNaN(v) ? 0 : v));
+  document.getElementById('propAngle').value = v;
+  document.getElementById('angleNum').value  = v;
+  if (obj.type === 'line') {
+    // V9：線段改成「繞中點重新指向」——設 obj.angle 只會整條歪掉且讀數對不上
+    // V9.2：sin 取負，配合「上＝90°」的座標系
+    const cxm = (obj.x1 + obj.x2) / 2, cym = (obj.y1 + obj.y2) / 2;
+    const half = Math.hypot(obj.x2 - obj.x1, obj.y2 - obj.y1) / 2;
+    const r = v * Math.PI / 180;
+    obj.set({
+      x1: cxm - half * Math.cos(r), y1: cym + half * Math.sin(r),
+      x2: cxm + half * Math.cos(r), y2: cym - half * Math.sin(r)
+    });
+    obj.setCoords();
+  } else if (hasHeading(obj)) {
+    // 弧線：整條繞自身中心轉到指定方位（弦向 = 目標角）
+    const cur = pathHeading(obj);
+    let d = v - cur;                       // 需要再轉多少
+    obj.set('angle', ((obj.angle || 0) - d) % 360);   // fabric 的 angle 是順時針，方位角是逆時針 → 取負
+    obj.setCoords();
+  } else {
+    obj.set('angle', v);
+  }
+  canvas.renderAll();
+  if (commit) saveHistory();
 }
+function updateAngle()    { applyAngle(parseInt(document.getElementById('propAngle').value), false); }
+function updateAngleNum(commit) { applyAngle(parseInt(document.getElementById('angleNum').value), commit); }
+function setAngle(v)      { applyAngle(v, true); }
 function updateStroke() {
   const obj = canvas.getActiveObject(); if (!obj) return;
   obj.set('stroke', document.getElementById('propStroke').value); canvas.renderAll(); saveHistory();
@@ -2196,9 +2777,13 @@ function deleteSelected() {
 }
 function clearAll() {
   if (!confirm('確定清空畫布？這會連底圖一起清除。')) return;
-  canvas.clear(); canvas.backgroundColor = 'rgba(0,0,0,0)';
+  canvas.clear(); canvas.backgroundColor = 'rgba(25,25,22,0)';
   bgImage = null; bgVisible = true;
   document.getElementById('bgControls').classList.remove('show');
+  autosaveClear();       // V5：使用者明確要清空，就別再把舊圖存著等下次問他
+  dismissRestoreBar();   // V9：把「接回去」提示條也收掉，否則按下去圖會全部回來
+  nodeHandles = [];      // V9：清掉殘留的線段控制點，否則 saveHistory 會把它們加回畫布
+  clearSnapMarker();
   canvas.renderAll(); saveHistory();
 }
 
@@ -2218,7 +2803,7 @@ function drawSnapGuides(guides) {
     // 外框：半透明黑（visibility on any background, 仿 outline_color from overlay）
     snapCtx.setLineDash([]);
     snapCtx.lineWidth   = 2;
-    snapCtx.strokeStyle = 'rgba(0,0,0,0.32)';
+    snapCtx.strokeStyle = 'rgba(25,25,22,0.32)';
     snapCtx.beginPath();
     if (g.type === 'v') { snapCtx.moveTo(g.pos, 0); snapCtx.lineTo(g.pos, ch); }
     else                { snapCtx.moveTo(0, g.pos); snapCtx.lineTo(cw, g.pos); }
@@ -2259,7 +2844,7 @@ function toggleGrid() {
   gridOn = !gridOn; document.getElementById('gridToggle').className = 'toggle' + (gridOn ? ' on' : '');
   const wrap = document.getElementById('canvasWrap');
   if (gridOn) {
-    wrap.style.backgroundImage = 'linear-gradient(rgba(100,100,200,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(100,100,200,0.05) 1px,transparent 1px),linear-gradient(rgba(100,100,200,0.13) 1px,transparent 1px),linear-gradient(90deg,rgba(100,100,200,0.13) 1px,transparent 1px)';
+    wrap.style.backgroundImage = 'linear-gradient(rgba(28,28,30,0.045) 1px,transparent 1px),linear-gradient(90deg,rgba(28,28,30,0.045) 1px,transparent 1px),linear-gradient(rgba(28,28,30,0.10) 1px,transparent 1px),linear-gradient(90deg,rgba(28,28,30,0.10) 1px,transparent 1px)';
     wrap.style.backgroundSize = '5px 5px,5px 5px,20px 20px,20px 20px';
   } else {
     wrap.style.backgroundImage = 'none';
@@ -2274,11 +2859,14 @@ function saveHistory() {
   if (suppressHist) return;
   suppressHist = true;
   nodeHandles.forEach(h => canvas.remove(h));
-  const json = JSON.stringify(canvas.toJSON(['name','selectable','evented','globalCompositeOperation']));
+  // V5：'perPixelTargetFind' 必須一起序列化，否則 undo/重載後填色物件會退回
+  //      預設的外接矩形判定，V4 那個「顏色框好大」的問題就會復發。
+  const json = JSON.stringify(canvas.toJSON(['name','selectable','evented','globalCompositeOperation','perPixelTargetFind','__locked']));
   nodeHandles.forEach(h => canvas.add(h));
   suppressHist = false;
   if (nodeHandles.length) canvas.renderAll();
   histMgr.save(json);
+  autosaveSchedule(json);   // V5：自動存檔（防當機／誤關分頁）
   updateStatus();
 }
 function undo() { const j = histMgr.undo(); if (j) loadState(j); }
@@ -2378,6 +2966,114 @@ function closeSidebar() { document.getElementById('sidebar').classList.remove('o
     }
   }, true);
 })();
+
+// ══════════════════════════════════════
+// V5 自動存檔（防當機 / 誤關分頁 / 誤按重整）
+// 起因：V4 完全沒有存檔，畫兩小時的五層格局圖只要分頁一關就歸零。
+// ══════════════════════════════════════
+const AUTOSAVE_KEY = 'geju.autosave.v1';
+const AUTOSAVE_MAX = 4 * 1024 * 1024;   // localStorage 上限約 5MB，留安全邊際
+let autosaveTimer = null;
+
+function autosaveSchedule(json) {
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => autosaveWrite(json), 800);   // 防抖：連續操作只寫最後一次
+}
+
+function autosaveWrite(json) {
+  try {
+    if (!json) return;
+    if (json.length > AUTOSAVE_MAX) { console.warn('[autosave] 圖檔過大，略過本次自動存檔'); return; }
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({
+      ts: Date.now(),
+      n: canvas ? canvas.getObjects().filter(o => !o._isHandle).length : 0,
+      json
+    }));
+  } catch (e) { console.warn('[autosave] 寫入失敗（可能超出容量）', e); }
+}
+
+/** V9：收掉「接回去」提示條。
+ *  沒有這個機制的話它會一直留在畫面上——使用者畫了半天、按了清空，
+ *  再順手點到那顆「接回去」，圖全部回來 → 看起來就像「清空失效」。*/
+function dismissRestoreBar() {
+  if (window.__asBar) { window.__asBar.remove(); window.__asBar = null; }
+}
+
+function autosaveClear() { try { localStorage.removeItem(AUTOSAVE_KEY); } catch (e) {} }
+
+function autosaveRead() {
+  try {
+    const d = JSON.parse(localStorage.getItem(AUTOSAVE_KEY) || 'null');
+    return (d && d.json) ? d : null;
+  } catch (e) { return null; }
+}
+
+// 開站時若偵測到上次沒收尾的圖，主動問要不要接回去（不自動蓋掉，避免嚇到人）
+window.addEventListener('load', () => {
+  const d = autosaveRead();
+  if (!d || !d.n) return;
+  if (canvas && canvas.getObjects().filter(o => !o._isHandle).length > 0) return;  // 畫布已有東西就不打擾
+
+  const mins = Math.round((Date.now() - d.ts) / 60000);
+  const when = mins < 1 ? '剛剛' : mins < 60 ? `${mins} 分鐘前` : `${Math.round(mins / 60)} 小時前`;
+
+  const bar = document.createElement('div');
+  window.__asBar = bar;   // V9：存起來，讓別處也能收掉
+  bar.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:9999;' +
+    'background:#1a1a2e;color:#fff;padding:12px 16px;border-radius:10px;box-shadow:0 8px 24px rgba(25,25,22,.35);' +
+    'display:flex;gap:12px;align-items:center;font-size:14px;max-width:92vw;flex-wrap:wrap';
+  bar.innerHTML =
+    '<span>偵測到 ' + when + ' 未存的圖（' + d.n + ' 個物件）</span>' +
+    '<button id="asRestore" style="background:#e8741a;color:#fff;border:0;padding:7px 14px;border-radius:7px;cursor:pointer;font-size:14px">接回去</button>' +
+    '<button id="asDrop" style="background:transparent;color:#bbb;border:1px solid #555;padding:7px 12px;border-radius:7px;cursor:pointer;font-size:14px">不用了</button>';
+  document.body.appendChild(bar);
+
+  bar.querySelector('#asRestore').onclick = () => {
+    loadState(d.json);
+    dismissRestoreBar();
+    showHint('已接回上次的圖');
+    setTimeout(() => showHint(''), 2000);
+  };
+  bar.querySelector('#asDrop').onclick = () => { autosaveClear(); dismissRestoreBar(); };
+
+  // V9：20 秒沒動作自動退場——不能讓它一直賴在畫面上
+  setTimeout(dismissRestoreBar, 20000);
+  // 使用者一開始畫東西就收掉：他等於已經選了「不接回去」
+  canvas.once('object:added', dismissRestoreBar);
+});
+
+/* ══ V9.1 屬性面板停靠 ══
+   桌機（>768px）：把屬性面板搬進右側面板底部 → 永遠不擋畫布
+   手機（≤768px）：右側面板本來就隱藏，維持原本的浮動貼底樣式 */
+function toggleRightPanel() {
+  const rp = document.getElementById('rightPanel');
+  rp.classList.toggle('collapsed');
+  document.body.classList.toggle('rp-collapsed', rp.classList.contains('collapsed'));
+  const btn = document.getElementById('rpCollapseBtn');
+  if (btn) btn.textContent = rp.classList.contains('collapsed') ? '‹' : '›';
+  // 面板寬度變了，畫布要跟著重算
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 200);
+}
+/* 收合狀態下選到物件時自動展開——不然屬性面板等於消失 */
+function expandRightPanelIfNeeded() {
+  const rp = document.getElementById('rightPanel');
+  if (rp && rp.classList.contains('collapsed') && window.innerWidth > 768) toggleRightPanel();
+}
+function dockPropPanel() {
+  const p  = document.getElementById('propPanel');
+  const rp = document.getElementById('rightPanel');
+  if (!p || !rp) return;
+  const shouldDock = window.innerWidth > 768;
+  const isDocked   = (p.parentElement === rp);
+  if (shouldDock && !isDocked)       rp.appendChild(p);
+  else if (!shouldDock && isDocked)  document.body.appendChild(p);
+}
+dockPropPanel();
+let __dockTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(__dockTimer);
+  __dockTimer = setTimeout(dockPropPanel, 150);
+});
 </script>
 </body>
 </html>
