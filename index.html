@@ -3375,7 +3375,7 @@ if (typeof module !== 'undefined') module.exports = GejuGeo;
   /* ── 讓自訂欄位跟著存檔／復原一起走 ── */
   const origToObject = fabric.Object.prototype.toObject;
   fabric.Object.prototype.toObject = function (props) {
-    const o = origToObject.call(this, (props || []).concat(['roomId', 'roomPx2', 'roomFor', 'roomSeedX', 'roomSeedY', 'roomBroken', 'assetKey', 'wallStyle', 'floorId', 'roomMat', 'roomBase', 'ltype', 'knownLen', 'roomKind', 'dimA', 'dimB', 'dimOff', 'cutBy', 'cutSeq', 'cutOrig', 'doorId', 'cutWall', 'roomUse', 'isLegend', 'legendSig', 'bgKey', 'knownSrc']));
+    const o = origToObject.call(this, (props || []).concat(['roomId', 'roomPx2', 'roomFor', 'roomSeedX', 'roomSeedY', 'roomBroken', 'assetKey', 'wallStyle', 'floorId', 'roomMat', 'roomBase', 'ltype', 'knownLen', 'roomKind', 'dimA', 'dimB', 'dimOff', 'cutBy', 'cutSeq', 'cutOrig', 'doorId', 'cutWall', 'roomUse', 'isLegend', 'legendSig', 'bgKey', 'knownSrc', 'roomNo']));
     if (this.roomMat && this.roomBase) o.fill = this.roomBase;      // 圖案填色不直接序列化（太大），存底色＋材質代號
     return o;
   };
@@ -3662,8 +3662,11 @@ if (typeof module !== 'undefined') module.exports = GejuGeo;
     canvas.add(poly);
     canvas.sendToBack(poly);
     if (bgImage) canvas.sendToBack(bgImage);
-    const used = new Set(canvas.getObjects().filter(o => o.name === '__roomlabel__').map(o => { const m = /^房間(\d+)/.exec(o.text || ''); return m ? +m[1] : 0; }));
-    let n = 1; while (used.has(n)) n++;                     // 取「還沒用過」的最小號碼：刪掉房間2再量，不會出現兩個房間3
+    // 已用的編號＝所有「房間色塊」記著的預設編號（改名也不會消失）＋標籤文字開頭的「房間N」（舊檔沒有 roomNo 時的備援）
+    const used = new Set(canvas.getObjects().filter(o => o.name === '__room__' && o.roomNo).map(o => +o.roomNo));
+    canvas.getObjects().filter(o => o.name === '__roomlabel__').forEach(o => { const m = /^房間(\d+)/.exec(o.text || ''); if (m) used.add(+m[1]); });
+    let n = 1; while (used.has(n)) n++;                     // 取「還沒用過」的最小號碼：刪掉房間2再量會補回2；但改過名的那間仍占著自己的號碼，不會再出現第二個「房間1」
+    poly.roomNo = n;
     const lab = new fabric.IText('房間' + n +(areaTextFor(poly) ? '\n' + areaTextFor(poly) : ''), {
       left: res.centroid.x, top: res.centroid.y, originX: 'center', originY: 'center', textAlign: 'center',
       fontSize: 16, fill: '#1a1a2e', fontFamily: '"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif',
@@ -3707,7 +3710,7 @@ if (typeof module !== 'undefined') module.exports = GejuGeo;
         if (same) return;
         const np = new fabric.Polygon(res.poly.map(q => ({ x: q.x, y: q.y })), {
           fill: p.fill, opacity: 0.55, stroke: null, objectCaching: false, selectable: false, evented: false,
-          name: '__room__', roomId: p.roomId, roomPx2: res.areaPx, roomSeedX: p.roomSeedX, roomSeedY: p.roomSeedY, __locked: true
+          name: '__room__', roomId: p.roomId, roomNo: p.roomNo, roomPx2: res.areaPx, roomSeedX: p.roomSeedX, roomSeedY: p.roomSeedY, __locked: true
         });
         if (p.roomMat) { np.roomMat = p.roomMat; np.roomBase = p.roomBase; if (window.__applyMat) window.__applyMat(np); }
         if (p.roomKind) { np.roomKind = p.roomKind; styleKind(np); }
@@ -6057,6 +6060,24 @@ window.__setShowAreas = function (v) {
         Object.assign(P16.T, T0m);
         rec('快取不會因座標取整而沿用過期幾何：同一張圖暖算、冷算結果相同', a49 != null && b51 != null && c51 != null && Math.abs(b51 - c51) < 1e-9, '4.9→' + (a49 && a49.toFixed(3)) + '；5.1 暖算 ' + (b51 && b51.toFixed(3)) + '／冷算 ' + (c51 && c51.toFixed(3)));
       } catch (e) { rec('快取暖冷一致', false, e.message); }
+      // 房名「+回來」：改名後，新房間的預設名稱不能又叫回已被改名那間的號碼
+      try {
+        clr(); G.setPxPerM(100);
+        [L(50, 50, 650, 50), L(650, 50, 650, 350), L(650, 350, 50, 350), L(50, 350, 50, 50), L(250, 50, 250, 350), L(450, 50, 450, 350)].forEach(l => canvas.add(l)); saveHistory(); await sleep(150);
+        const first = r => (G.labelFor(r.roomId).text || '').split('\n')[0];
+        const renameRoom = async (r, txt) => { const l = G.labelFor(r.roomId); canvas.setActiveObject(l); l.enterEditing(); l.text = txt; l.fire('changed'); l.exitEditing(); canvas.fire('object:modified', { target: l }); canvas.discardActiveObject(); await sleep(150); };
+        G.addRoomAt({ x: 150, y: 200 }); await sleep(200); const rA = G.roomPolys()[0];
+        await renameRoom(rA, '客廳');
+        G.addRoomAt({ x: 350, y: 200 }); await sleep(200); const rB = G.roomPolys()[0];
+        const nameB = first(rB);
+        await renameRoom(rB, '臥室');
+        G.addRoomAt({ x: 550, y: 200 }); await sleep(200); const rC = G.roomPolys()[0];
+        const nameC = first(rC);
+        // 刪掉第 2 間再新增：空出來的號碼可以補回來（但不會重複）
+        canvas.remove(G.labelFor(rC.roomId)); await sleep(150);
+        G.addRoomAt({ x: 550, y: 200 }); await sleep(200); const rD = G.roomPolys()[0]; const nameD = first(rD);
+        rec('改名後新增房間：預設名稱不重複（客廳→新房間叫「房間2」，不是又冒出「房間1」）', nameB === '房間2' && nameC === '房間3' && nameD === '房間3', '新房間依序叫 ' + nameB + '／' + nameC + '／刪掉再量後 ' + nameD);
+      } catch (e) { rec('房名編號不重複', false, e.message); }
     } catch (e) { rec('檢查過程發生錯誤', false, e.message); }
     // 還原
     try {
@@ -8966,7 +8987,7 @@ window.__LUCIDE = {"crop": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"
       <div class="st"><b>Q：房間量出一大片？</b>附近有牆沒接上：按 <kbd>T</kbd> 整理，或補一道牆。</div>
       <div class="st"><b>Q：2.5D 沒有家具？</b>房間要有用途（改房名＋依房名配色，或面積表選用途）；形狀太不規則或太小也會擺得少。</div>
       <div class="st"><b>Q：改了沒反應？</b>按 <kbd>Ctrl+F5</kbd> 強制重新整理，再按「接回去」。</div>
-      <div class="st"><b>Q：怕程式出錯？</b>按「自我檢查」，全綠＝內建的 64 項情境都通過（會暫時借用畫布，跑完自動還原；不代表所有操作都沒問題）。重要的圖請先「存專案」。</div>`)
+      <div class="st"><b>Q：怕程式出錯？</b>按「自我檢查」，全綠＝內建的 65 項情境都通過（會暫時借用畫布，跑完自動還原；不代表所有操作都沒問題）。重要的圖請先「存專案」。</div>`)
   ];
   const mp = document.createElement('div'); mp.id = 'manPop';
   mp.innerHTML = '<div class="mh"><h2>📖 格局神器 V10 使用說明書</h2><input id="manQ" type="search" placeholder="搜尋，例如：比例、橘線、成果圖"><button class="ap-btn" id="manTour">▶ 新手教學</button><button class="ap-btn" id="manOld">舊版說明</button><button class="ap-btn" id="manX">✕</button></div>' +
