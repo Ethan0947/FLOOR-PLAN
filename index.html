@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#111118">
-<title>Ethan 格局神器 V10</title>
+<title>Ethan 格局神器 V10 beta（算坪・專案檔）</title>
 <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
 <style>
 :root{--bg:#f7f6f4;--sidebar:#ffffff;--panel:#ffffff;--accent:#e8741a;--accent-ink:#b8560d;--accent-bg:#fdf1e7;--accent2:#c98a12;--text:#1c1c1e;--muted:#8e8d89;--border:#e8e7e4;--border-strong:#d8d7d3;--btn:#f4f3f1;--btn-hover:#ecebe8;--green:#e8741a;--radius:8px;--glow:rgba(232,116,26,0.16);--sh-float:0 1px 3px rgba(25,25,22,.08),0 10px 32px rgba(25,25,22,.10);--sh-menu:0 4px 24px rgba(25,25,22,.14);}
@@ -505,7 +505,7 @@ summary.rp-bg-summary::-webkit-details-marker{display:none;}
       <path d="M5.5 9.5 A4 4 0 0 1 9.5 13.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
     </svg>
     <span class="brand-name">格局神器</span>
-    <span class="version">V10</span>
+    <span class="version">V10β</span>
   </div>
   <div class="tb-sep"></div>
   <div class="tb-mode">
@@ -2337,6 +2337,7 @@ function getObjDisplayName(obj, idx) {
   return `${getObjTypeName(obj)} ${idx + 1}`;
 }
 
+function escLayer(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 function refreshLayerPanel() {
   const panel = document.getElementById('layerPanel');
   if (!panel.classList.contains('open')) return;
@@ -2371,13 +2372,13 @@ function refreshLayerPanel() {
 
     const blendLabel = getBlendLabel(obj.globalCompositeOperation);
     const blendBadge = (obj.globalCompositeOperation && obj.globalCompositeOperation !== 'source-over')
-      ? `<span class="blend-badge">${blendLabel}</span>` : '';
+      ? `<span class="blend-badge">${escLayer(blendLabel)}</span>` : '';
     const opPct = obj.opacity !== undefined && obj.opacity < 0.99 ? `<span style="font-size:0.58rem;color:var(--accent2);margin-left:3px">${Math.round(obj.opacity*100)}%</span>` : '';
     item.innerHTML = `
       <span class="layer-drag-handle" title="${isBg ? '鎖定' : '拖移排序'}">${isBg ? '🔒' : '⠿'}</span>
       <div class="layer-thumb">${getObjIcon(obj)}</div>
       <div class="layer-info">
-        <div class="layer-name">${getObjDisplayName(obj, realIdx)}${blendBadge}${opPct}</div>
+        <div class="layer-name">${escLayer(getObjDisplayName(obj, realIdx))}${blendBadge}${opPct}</div>
         <div class="layer-type">${getObjTypeName(obj)}</div>
       </div>
       ${!isBg ? `<button class="layer-vis-btn" title="${obj.visible === false ? '顯示' : '隱藏'}" onclick="layerToggleVis(${realIdx})">${obj.visible === false ? '🙈' : '👁'}</button>` : ''}
@@ -3542,7 +3543,7 @@ if (typeof module !== 'undefined') module.exports = GejuGeo;
   function roomPolys() { return canvas.getObjects().filter(o => o.name === '__room__'); }
   function labelFor(id) { return canvas.getObjects().find(o => o.name === '__roomlabel__' && o.roomFor === id); }
   /** 內縮 d 後的面積：A − P·d + d²·Σcot(θ/2)（θ＝各頂點內角）；適用 d 遠小於邊長的一般多邊形 */
-  function insetArea(pts, d) {
+  function insetArea(pts, d, flag) {
     const n = pts.length; if (n < 3) return 0;
     let s2 = 0; for (let i = 0; i < n; i++) { const p = pts[i], q = pts[(i + 1) % n]; s2 += p.x * q.y - q.x * p.y; }
     const sgn = s2 >= 0 ? 1 : -1, A = Math.abs(s2 / 2);
@@ -3556,37 +3557,97 @@ if (typeof module !== 'undefined') module.exports = GejuGeo;
       if (Math.abs(turn) > 1e-3) cot += 1 / Math.tan(th / 2);
     }
     const r = A - P * d + d * d * cot;
+    if (!(r > 0 && r <= A) && flag) flag.fail = true;                 // 太窄、內縮後不成立：呼叫端要知道這個值其實是中心線面積
     return (r > 0 && r <= A) ? r : A;
   }
-  function roomM2(poly) {
+  /* 巢狀房間：一個封閉區域完整落在另一個裡面（例如浴室、儲藏室、天井被牆圍起來）。
+     房間偵測只描「外圈」，內圈的面積會被外圈重複算進去 → 外圈要扣掉「直接」包著的內圈（內圈本身另算，或標「不計」）。 */
+  function bboxOf(pts) { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; pts.forEach(q => { x0 = Math.min(x0, q.x); y0 = Math.min(y0, q.y); x1 = Math.max(x1, q.x); y1 = Math.max(y1, q.y); }); return { x0, y0, x1, y1 }; }
+  function segCross(p1, p2, p3, p4) {                    // 兩線段內部真的相交（只在端點碰到不算）
+    const d = (p2.x - p1.x) * (p4.y - p3.y) - (p2.y - p1.y) * (p4.x - p3.x); if (Math.abs(d) < 1e-9) return false;
+    const t = ((p3.x - p1.x) * (p4.y - p3.y) - (p3.y - p1.y) * (p4.x - p3.x)) / d, u = ((p3.x - p1.x) * (p2.y - p1.y) - (p3.y - p1.y) * (p2.x - p1.x)) / d;
+    return t > 1e-6 && t < 1 - 1e-6 && u > 1e-6 && u < 1 - 1e-6;
+  }
+  function roomInside(inner, outer) {                    // inner 完整在 outer 裡面：面積較小、「每個頂點」都在裡面、而且邊與邊沒有互相穿過（凹形也成立）
+    if (!inner.points || !outer.points || !(inner.roomPx2 < outer.roomPx2)) return false;
+    const bi = bboxOf(inner.points), bo = bboxOf(outer.points), e = 1;
+    if (bi.x0 < bo.x0 - e || bi.y0 < bo.y0 - e || bi.x1 > bo.x1 + e || bi.y1 > bo.y1 + e) return false;
+    if (!inner.points.every(q => pointInPoly(q, outer.points))) return false;
+    const A = inner.points, B = outer.points;
+    for (let i = 0; i < A.length; i++) for (let j = 0; j < B.length; j++) if (segCross(A[i], A[(i + 1) % A.length], B[j], B[(j + 1) % B.length])) return false;
+    return true;
+  }
+  /** list：帶 points／roomPx2 的房間（畫布上的或存檔 JSON 裡的）。回傳 Map：外圈 → 直接包著的內圈陣列 */
+  function directChildren(list) {
+    const seenF = new Set();                                   // 同一個幾何面（例如刪掉內部隔牆後兩個房名占同一空間）只算一次，否則同一個洞會扣兩次
+    const ok = list.filter(r => !r.roomBroken && r.points && r.roomPx2).filter(r => { const sg = faceSig(r); if (seenF.has(sg)) return false; seenF.add(sg); return true; }), m = new Map();
+    ok.forEach(a => {
+      const inside = ok.filter(b => b !== a && roomInside(b, a));
+      const direct = inside.filter(b => !inside.some(c => c !== b && roomInside(b, c)));
+      if (direct.length) m.set(a, direct);
+    });
+    return m;
+  }
+  function holePx2(poly, list) { const ch = directChildren(list || roomPolys()).get(poly); return ch ? ch.reduce((t, r) => t + r.roomPx2, 0) : 0; }
+  function outsetArea(pts, d) {                          // 向外擴 d 之後的面積（A + P·d + d²·Σcot）；用來當「洞」的大小
+    const n = pts.length; if (n < 3) return 0;
+    let s2 = 0; for (let i = 0; i < n; i++) { const p = pts[i], q = pts[(i + 1) % n]; s2 += p.x * q.y - q.x * p.y; }
+    const sgn = s2 >= 0 ? 1 : -1, A = Math.abs(s2 / 2); let P = 0, cot = 0;
+    for (let i = 0; i < n; i++) {
+      const a = pts[(i - 1 + n) % n], b = pts[i], c = pts[(i + 1) % n], ux = b.x - a.x, uy = b.y - a.y, vx = c.x - b.x, vy = c.y - b.y;
+      P += Math.hypot(vx, vy); const turn = Math.atan2(sgn * (ux * vy - uy * vx), ux * vx + uy * vy), th = Math.PI - turn;
+      if (Math.abs(turn) > 1e-3) cot += 1 / Math.tan(th / 2);
+    }
+    return A + P * d + d * d * cot;
+  }
+  const holeM2 = (r, scale) => { const c = r.roomPx2 / (scale * scale); if (!netOn || !r.points) return c; return outsetArea(r.points, (wallT / 2) * scale) / (scale * scale); };
+  function roomM2Raw(poly) {
     if (!pxPerM) return null;
     const c = poly.roomPx2 / (pxPerM * pxPerM);
     if (!netOn || !poly.points) return c;
-    const d = (wallT / 2) * pxPerM;
-    return insetArea(poly.points, d) / (pxPerM * pxPerM);
+    const d = (wallT / 2) * pxPerM, fl = {};
+    const v = insetArea(poly.points, d, fl) / (pxPerM * pxPerM);
+    poly.__netFail = !!fl.fail;
+    return v;
+  }
+  function roomM2Of(o, scale, list) {
+    if (!scale || !o || !o.roomPx2) return null;
+    const rawOf = r => { const c = r.roomPx2 / (scale * scale); if (!netOn || !r.points) return c; return insetArea(r.points, (wallT / 2) * scale, {}) / (scale * scale); };
+    const ch = directChildren(list || []).get(o);
+    return Math.max(0, rawOf(o) - (ch ? ch.reduce((t, r) => t + holeM2(r, scale), 0) : 0));
+  }
+  function roomM2(poly) {
+    const v = roomM2Raw(poly); if (v == null) return null;
+    const ch = directChildren(roomPolys()).get(poly);
+    if (!ch) return v;
+    return Math.max(0, v - ch.reduce((t, r) => t + holeM2(r, pxPerM), 0));
   }
   function areaTextFor(poly) {
     if (!showAreas) return '';
     if (poly.roomBroken) return '⚠ 牆未封閉，面積待確認';
     const m2 = roomM2(poly);
     if (m2 == null) return '（未校正比例）';
-    return f2(m2) + '㎡｜' + f2(m2 / PING) + ' 坪' + (netOn ? '（淨）' : '') + (KIND_TAG[poly.roomKind || 'main'] || '');
+    const nch = (directChildren(roomPolys()).get(poly) || []).length;
+    return f2(m2) + '㎡｜' + f2(m2 / PING) + ' 坪' + (nch ? '（已扣內含的 ' + nch + ' 個封閉區域）' : '') + (netOn ? (poly.__netFail ? '（中心線；太窄算不出淨面積）' : '（淨）') : '') + (KIND_TAG[poly.roomKind || 'main'] || '');
   }
 
   function addRoomAt(p) {
     if (!pxPerM) {
-      hint('先做比例校正：點兩點、輸入實際長度，之後算出的才是真的坪數', 4000);
+      hint('先做比例校正：點兩點、輸入實際長度，之後算出的才是依比例換算的估算坪數', 4000);
       startScale(); return;
     }
     // 點在已經量過的房間裡 → 不重複建，閃一下那間讓人看到（一個空間只該有一筆；仍留在量房間模式，可繼續點別間）
-    const dup = roomPolys().find(q => !q.roomBroken && q.points && pointInPoly(p, q.points));
+    // 注意：點在「大房間裡面的小房間」時，不能因為點在大房間範圍內就當成重複——要看這一點圍出來的是不是同一個空間（面積相同）
+    const res = GejuGeo.findRoom(collectWallSegs(), p, gapW());
+    const dup = res.ok
+      ? roomPolys().find(q => !q.roomBroken && q.points && pointInPoly(p, q.points) && Math.abs(q.roomPx2 - res.areaPx) < 0.5)
+      : roomPolys().find(q => !q.roomBroken && q.points && pointInPoly(p, q.points));
     if (dup) {
       const l = labelFor(dup.roomId), op = dup.opacity;
       dup.set('opacity', 0.95); canvas.renderAll(); setTimeout(() => { dup.set('opacity', op); canvas.renderAll(); }, 450);
       hint('這裡已經量過了（' + (l ? (l.text || '').split('\n')[0] : '房間') + '）。要重量請先在面積表按該列的 ✕ 刪掉', 4000);
       return;
     }
-    const res = GejuGeo.findRoom(collectWallSegs(), p, gapW());
     if (!res.ok) { hint('⚠ ' + res.reason, 5000); return; }
     const id = 'r' + Date.now().toString(36) + (roomSeq++);
     const color = ROOM_COLORS[roomPolys().length % ROOM_COLORS.length];
@@ -3640,7 +3701,8 @@ if (typeof module !== 'undefined') module.exports = GejuGeo;
       if (!res.ok) {
         if (!p.roomBroken) { p.roomBroken = true; p.set('opacity', 0.2); changed = true; }
       } else {
-        const same = !p.roomBroken && Math.abs(p.roomPx2 - res.areaPx) < 0.5 && p.points && p.points.length === res.poly.length;
+        const rx = Math.min(...res.poly.map(q => q.x)), ry = Math.min(...res.poly.map(q => q.y));
+        const same = !p.roomBroken && Math.abs(p.roomPx2 - res.areaPx) < 0.5 && p.points && p.points.length === res.poly.length && Math.abs((p.left || 0) - rx) < 1 && Math.abs((p.top || 0) - ry) < 1;   // 面積相同但整體平移了，輪廓也要跟著換
         // 注意：重算時「不要」搬動種子點。牆暫時缺一道時（讀檔中途、刪了再畫），兩間會短暫合併，若此時搬到合併後的中心，牆回來後兩間會變成同一間、救不回來
         if (same) return;
         const np = new fabric.Polygon(res.poly.map(q => ({ x: q.x, y: q.y })), {
@@ -3664,13 +3726,24 @@ if (typeof module !== 'undefined') module.exports = GejuGeo;
     return origSaveHistory.apply(this, arguments);
   };
 
+  /* 同一個空間被兩個以上房名占用（例如刪掉隔間牆後兩間合成一個空間）：幾何面相同 → 只有第一個計入合計，其餘標「同空間」 */
+  function faceSig(o) {                                  // 同一個幾何面＝所有頂點座標都相同（只比外框、面積、頂點數會把兩個互補的三角形誤判成同一個）
+    const pts = (o.points || []).map(q => Math.round(q.x * 2) + ',' + Math.round(q.y * 2)).sort();
+    return [Math.round(o.left || 0), Math.round(o.top || 0), Math.round(o.roomPx2 || 0), pts.join(';')].join('|');
+  }
+  function roomDupIds() {
+    const seen = new Set(), dup = new Set();
+    roomPolys().forEach(p => { if (p.roomBroken) return; const sg = faceSig(p); if (seen.has(sg)) dup.add(p.roomId); else seen.add(sg); });
+    return dup;
+  }
   /* 面積表 */
   function roomRows() {
+    const dups = roomDupIds();
     return roomPolys().map(p => {
       const lab = labelFor(p.roomId);
       const name = lab ? (lab.text || '').split('\n')[0] : '房間';
       const m2 = roomM2(p);
-      return { id: p.roomId, name, m2, ping: m2 == null ? null : m2 / PING, kind: p.roomKind || 'main' };
+      return { id: p.roomId, name, m2, ping: m2 == null ? null : m2 / PING, kind: p.roomKind || 'main', dup: dups.has(p.roomId) };
     });
   }
   function renderAreaPanel() {
@@ -3689,9 +3762,9 @@ if (typeof module !== 'undefined') module.exports = GejuGeo;
       html += '<table class="ap-table"><tr><th>房間</th><th>㎡</th><th>坪</th></tr>';
       let tm = 0, tp = 0, am = 0, ap = 0, em = 0, ep = 0;
       rows.forEach(r => {
-        if (r.m2 != null) { if (r.kind === 'main') { tm += r.m2; tp += r.ping; } else if (r.kind === 'attached') { am += r.m2; ap += r.ping; } else if (r.kind === 'extra') { em += r.m2; ep += r.ping; } }
+        if (r.m2 != null && !r.dup) { if (r.kind === 'main') { tm += r.m2; tp += r.ping; } else if (r.kind === 'attached') { am += r.m2; ap += r.ping; } else if (r.kind === 'extra') { em += r.m2; ep += r.ping; } }
         const pc = roomPolys().find(q => q.roomId === r.id);
-        const kindNote = r.kind === 'extra' ? ' <small style="color:#c0392b">增建</small>' : r.kind === 'attached' ? ' <small>陽台</small>' : r.kind === 'yard' ? ' <small style="opacity:.6">不計</small>' : '';
+        const kindNote = r.dup ? ' <small style="color:#c0392b" title="這個房名和上面某間占用同一個空間（隔間牆被移除或重疊），合計只算一次">同空間・不重複計</small>' : r.kind === 'extra' ? ' <small style="color:#c0392b">增建</small>' : r.kind === 'attached' ? ' <small>陽台</small>' : r.kind === 'yard' ? ' <small style="opacity:.6">不計</small>' : '';
         html += '<tr' + (r.kind === 'extra' ? ' style="color:#c0392b"' : '') + '><td><span class="rc" onclick="gejuCycleRoomColor(\'' + r.id + '\')" title="點一下換顏色" style="display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;cursor:pointer;border:1px solid rgba(0,0,0,.25);background:' + (pc && typeof pc.fill === 'string' ? pc.fill : (pc && pc.roomBase) || '#ddd') + '"></span>' + r.name.replace(/</g, '&lt;') + kindNote + ' <span class="rdel" onclick="gejuDelRoom(\'' + r.id + '\')" title="刪除這間（色塊＋名稱；Ctrl+Z 可復原）" style="cursor:pointer;opacity:.45;font-size:.7rem;padding:0 2px">✕</span></td><td>' + (r.m2 == null || !showAreas ? '—' : f2(r.m2)) + '</td><td>' + (r.ping == null || !showAreas ? '—' : f2(r.ping)) + '</td></tr>';
       });
       const N = v => showAreas ? f2(v) : '—';
@@ -3701,7 +3774,7 @@ if (typeof module !== 'undefined') module.exports = GejuGeo;
       html += '</table>';
       html += '<button class="ap-btn" onclick="gejuCopyAreas()">複製表格</button> <button class="ap-btn" onclick="gejuCsvAreas()">下載 CSV</button>';
     }
-    html += '<div class="ap-note">面積為「依圖上描繪＋比例換算」之估算值（' + (netOn ? '已扣牆厚' : '牆線中心線內') + '），非實測、非權狀登記面積，僅供參考。</div>';
+    html += '<div class="ap-note">面積為「依圖上描繪＋比例換算」之估算值（' + (netOn ? '已扣牆厚' : '牆線中心線內') + '），非實測、非權狀登記面積，僅供參考。房間裡面如果還有被牆圍起來的小區域（浴室、天井），請也用「房間」點量；天井請把類別改成「不計」，外圈才會正確扣掉。</div>';
     box.innerHTML = html;
     if (window.__areaHook) { try { window.__areaHook(box); } catch (e) { console.warn('[areaHook]', e); } }
     const sh = $('apShow'); if (sh) sh.onchange = () => window.__setShowAreas(sh.checked);
@@ -3735,13 +3808,14 @@ window.__setShowAreas = function (v) {
   window.gejuStartScale = startScale;
   window.gejuCalibPing = calibrateByPing;
   window.gejuCopyAreas = function () {
-    const rows = roomRows();
+    const rows = roomRows().filter(r => !r.dup);              // 同空間重複的房名不輸出面積，避免拿去加總變兩倍
     const txt = ['房間\t類別\t㎡\t坪'].concat(rows.map(r => r.name + '\t' + KIND_LABEL[r.kind] + '\t' + (r.m2 == null || !showAreas ? '' : f2(r.m2)) + '\t' + (r.ping == null || !showAreas ? '' : f2(r.ping)))).join('\n');
     (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => hint('已複製，可貼進 Excel／LINE', 2500)).catch(() => prompt('請按 Ctrl+C 複製：', txt));
   };
   window.gejuCsvAreas = function () {
-    const rows = roomRows();
-    const csv = '﻿房間,類別,平方公尺,坪\n' + rows.map(r => '"' + r.name.replace(/"/g, '""') + '",' + KIND_LABEL[r.kind] + ',' + (r.m2 == null || !showAreas ? '' : f2(r.m2)) + ',' + (r.ping == null || !showAreas ? '' : f2(r.ping))).join('\n');
+    const rows = roomRows().filter(r => !r.dup);              // 同空間重複的房名不輸出面積，避免拿去加總變兩倍
+    const csvSafe = t => /^[=+\-@\t\r]/.test(t) ? "'" + t : t;       // 防止房名被 Excel 當公式（CSV injection）
+    const csv = '﻿房間,類別,平方公尺,坪\n' + rows.map(r => '"' + csvSafe(r.name).replace(/"/g, '""') + '",' + KIND_LABEL[r.kind] + ',' + (r.m2 == null || !showAreas ? '' : f2(r.m2)) + ',' + (r.ping == null || !showAreas ? '' : f2(r.ping))).join('\n');
     dl(new Blob([csv], { type: 'text/csv;charset=utf-8' }), '面積表_' + stamp() + '.csv');
   };
 
@@ -3895,12 +3969,12 @@ window.__setShowAreas = function (v) {
     if (typeof clearLineHandles === 'function') clearLineHandles();
     const was = bgVisible, vpt = canvas.viewportTransform.slice();
     if (bgImage && bgVisible) { bgImage.set('opacity', 0); bgVisible = false; }
-    const dx = canvas.getObjects().filter(o => o.name === '__dxf__'); dx.forEach(o => o.set('visible', false));
+    const dx = canvas.getObjects().filter(o => o.name === '__dxf__'), dxPrev = dx.map(o => o.visible); dx.forEach(o => o.set('visible', false));
     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
     canvas.renderAll();
     try { return fn(); } finally {
       canvas.setViewportTransform(vpt);
-      dx.forEach(o => o.set('visible', true));
+      dx.forEach((o, i) => o.set('visible', dxPrev[i] !== false));       // 還原成原本的顯示狀態（不是一律顯示）
       if (bgImage && was) { bgImage.set('opacity', parseInt($('bgOpacity').value) / 100); bgVisible = true; $('bgVisBtn').textContent = '👁 隱藏底圖'; }
       canvas.renderAll();
     }
@@ -3929,7 +4003,12 @@ window.__setShowAreas = function (v) {
     if (kind === 'svg') {
       withBgHidden(() => {
         const b = exportBox();
-        const svg = canvas.toSVG(b ? { viewBox: { x: b.left, y: b.top, width: b.width, height: b.height }, width: b.width, height: b.height } : {});
+        // 底圖與 DXF 底圖：只設成透明／隱藏不夠，SVG 仍會把原圖資料包進檔案。輸出時明確排除，輸出完再還原
+        const ex = canvas.getObjects().filter(o => o.name === '__bg_image__' || o.name === '__dxf__'), exPrev = ex.map(o => o.excludeFromExport);
+        ex.forEach(o => { o.excludeFromExport = true; });
+        let svg;
+        try { svg = canvas.toSVG(b ? { viewBox: { x: b.left, y: b.top, width: b.width, height: b.height }, width: b.width, height: b.height } : {}); }
+        finally { ex.forEach((o, i) => { o.excludeFromExport = exPrev[i]; }); }
         dl(new Blob([svg], { type: 'image/svg+xml' }), base + '.svg');
       });
       return;
@@ -4006,7 +4085,7 @@ window.__setShowAreas = function (v) {
     parseLen, get pxPerM() { return pxPerM; }, setScale, absEnds, collectWallSegs, roomPolys, labelFor, roomM2, areaTextFor, roomRows,
     f2, hint, dl, stamp, PING, refreshRooms, renderAreaPanel, recomputeRooms, addRoomAt,
     get gapPx() { return gapW(); }, get gapCm() { return gapCm; }, get showAreas() { return showAreas; }, KIND_LABEL, styleKind, get netOn() { return netOn; }, get wallT() { return wallT; },
-    setPxPerM(v) { pxPerM = v; }, setGapCm(v) { gapCm = Math.max(10, +v || 100); lastSig = ''; }, pointInPoly, ROOM_COLORS, insetArea, withBgHidden, exportBox, tone, preflight
+    faceSig, roomDupIds, directChildren, holePx2, roomM2Of, setPxPerM(v) { pxPerM = v; }, setGapCm(v) { gapCm = Math.max(10, +v || 100); lastSig = ''; }, pointInPoly, ROOM_COLORS, insetArea, withBgHidden, exportBox, tone, preflight
   };
 })();
 
@@ -4310,9 +4389,11 @@ window.__setShowAreas = function (v) {
     const deflate = j => j.replace(/"src":"(data:image\/[^"]{3000,})"/g, (m, d) => '"src":"@@' + token(d) + '@@"');
     const inflate = j => j.replace(/"src":"@@([a-z0-9_]+)@@"/g, (m, t) => '"src":"' + store.get(t) + '"');
     const os = histMgr.save.bind(histMgr), ou = histMgr.undo.bind(histMgr), orr = histMgr.redo.bind(histMgr);
-    histMgr.save = function (j) { os(deflate(j)); const e = histMgr.undoStack[histMgr.undoStack.length - 1]; if (e) { e.ts = Date.now(); histMgr.totalBytes += 0; } };
-    histMgr.undo = function () { const j = ou(); return j && inflate(j); };
-    histMgr.redo = function () { const j = orr(); return j && inflate(j); };
+    histMgr.save = function (j) { os(deflate(j)); const e = histMgr.undoStack[histMgr.undoStack.length - 1]; if (e) { e.ts = Date.now(); e.scale = G.pxPerM; histMgr.totalBytes += 0; } };   // 每一步連同「當時的比例」一起存
+    // 復原／重做後，把比例也放回那一步當時的值（否則圖回到舊位置、比例卻留新值，面積會差好幾倍）
+    const restoreScale = () => { const e = histMgr.undoStack[histMgr.undoStack.length - 1]; if (e && 'scale' in e && G.pxPerM !== e.scale) { G.setPxPerM(e.scale); setTimeout(() => { try { G.refreshRooms(); G.renderAreaPanel(); } catch (x) {} }, 150); } };
+    histMgr.undo = function () { const j = ou(); if (j) restoreScale(); return j && inflate(j); };
+    histMgr.redo = function () { const j = orr(); if (j) restoreScale(); return j && inflate(j); };
     window.__inflateHist = inflate;
   })();
   const hp = document.createElement('div'); hp.id = 'histPop'; document.body.appendChild(hp);
@@ -4444,12 +4525,14 @@ window.__setShowAreas = function (v) {
     f.hist = { u: histMgr.undoStack, r: histMgr.redoStack, t: histMgr.totalBytes };
   }
   function enterFloor(i, afterCb) {
+    try { clearTimeout(autosaveTimer); } catch (e) {}        // 取消還沒寫入的舊樓層自動存檔（否則 800ms 後會用「新樓層」的比例與樓層編號去存「舊樓層」的畫面）
     cur = i; const t = floors[i];
     G.setPxPerM(t.scale || null);
     histMgr.undoStack = t.hist ? t.hist.u : []; histMgr.redoStack = t.hist ? t.hist.r : []; histMgr.totalBytes = t.hist ? t.hist.t : 0;
     const done = () => {
       if (!t.hist) { saveHistory(); }
       renderFloorBar(); G.refreshRooms(); G.renderAreaPanel(); canvas.renderAll();
+      try { autosaveSchedule(JSON.stringify(canvas.toJSON(PROPS))); } catch (e) {}      // 換完樓層後，以「新樓層」的真實狀態重新排一次自動存檔（會連同其他樓層一起存）
       if (afterCb) afterCb();
     };
     if (t.json) loadJson(t.json, done);
@@ -4479,16 +4562,16 @@ window.__setShowAreas = function (v) {
   }
   renderFloorBar();
   window.__floors = { get list() { return floors; }, get cur() { return cur; }, goFloor, goFloorP, snapshotCurrent, render: renderFloorBar, setCur(i) { cur = i; },
-    newFloor(name, cb) { snapshotCurrent(); floors.push({ name: name || (floors.length + 1) + 'F', json: null, scale: G.pxPerM, hist: null }); enterFloor(floors.length - 1, cb); } };
+    newFloor(name, cb, scale) { snapshotCurrent(); floors.push({ name: name || (floors.length + 1) + 'F', json: null, scale: scale === undefined ? G.pxPerM : scale, hist: null }); enterFloor(floors.length - 1, cb); } };
 
   // 各樓層面積合計（以各樓層自己的比例，中心線面積）
   function floorTotals() {
     const res = [];
     floors.forEach((f, i) => {
       let m2 = 0, n = 0;
-      if (i === cur) { const pm = G.pxPerM; if (pm) G.roomPolys().forEach(p => { if (p.roomKind || !p.roomPx2) return; m2 += p.roomPx2 / (pm * pm); n++; }); }   // 和其他樓層同一種算法（中心線），不受「扣牆厚」影響
+      if (i === cur) { const pm = G.pxPerM, dp = G.roomDupIds(); if (pm) G.roomPolys().forEach(p => { if (p.roomKind || !p.roomPx2 || p.roomBroken || dp.has(p.roomId)) return; m2 += (p.roomPx2 - G.holePx2(p)) / (pm * pm); n++; }); }   // 和其他樓層同一種算法（中心線），不受「扣牆厚」影響
       else if (f.json && f.scale) {
-        try { JSON.parse(f.json).objects.forEach(o => { if (o.name === '__room__' && o.roomPx2 && !o.roomKind) { m2 += o.roomPx2 / (f.scale * f.scale); n++; } }); } catch (e) {}
+        try { const seen = new Set(), os = JSON.parse(f.json).objects, rl = os.filter(o => o.name === '__room__'); rl.forEach(o => { if (o.roomPx2 && !o.roomKind && !o.roomBroken) { const sg = G.faceSig(o); if (seen.has(sg)) return; seen.add(sg); m2 += (o.roomPx2 - G.holePx2(o, rl)) / (f.scale * f.scale); n++; } }); } catch (e) {}
       }
       res.push({ name: f.name, m2, n });
     });
@@ -4515,11 +4598,20 @@ window.__setShowAreas = function (v) {
         const d = JSON.parse(e.target.result);
         if (d.format !== 'geju.project') throw new Error('這不是格局神器的專案檔');
         if (d.schemaVersion > 2 && !confirm('這個檔案來自較新的版本，部分內容可能無法還原，仍要開啟？')) return;
-        if (d.floors) floors = d.floors.map(x => ({ name: x.name || '樓層', scale: x.scale || null, json: x.canvas ? JSON.stringify(x.canvas) : null, hist: null }));
-        else floors = [{ name: '1F', scale: d.scale && d.scale.pxPerMeter || null, json: JSON.stringify(d.canvas), hist: null }];
-        if (!floors.length) throw new Error('檔案內沒有樓層資料');
+        let nf;
+        if (d.floors) {
+          if (!Array.isArray(d.floors) || !d.floors.length) throw new Error('檔案內沒有樓層資料');
+          d.floors.forEach(x => { if (!x || typeof x !== 'object') throw new Error('樓層資料格式不正確'); if (x.canvas != null && (typeof x.canvas !== 'object' || !Array.isArray(x.canvas.objects))) throw new Error('樓層畫面資料格式不正確'); });
+          nf = d.floors.map(x => ({ name: String(x.name || '樓層'), scale: Number.isFinite(x.scale) && x.scale > 0 ? x.scale : null, json: x.canvas ? JSON.stringify(x.canvas) : null, hist: null }));
+        } else {
+          if (!d.canvas || !Array.isArray(d.canvas.objects)) throw new Error('檔案內沒有畫面資料');
+          nf = [{ name: '1F', scale: d.scale && Number.isFinite(d.scale.pxPerMeter) && d.scale.pxPerMeter > 0 ? d.scale.pxPerMeter : null, json: JSON.stringify(d.canvas), hist: null }];
+        }
+        const cu = Number.isInteger(d.current) && d.current >= 0 && d.current < nf.length ? d.current : 0;
+        // 全部驗證通過才取代原本的樓層清單；失敗時原專案完全不動
+        floors = nf;
         if (G.setGapCm) G.setGapCm(d.gapCm || 100);             // 封口距離跟著專案走
-        enterFloor(Math.min(d.current || 0, floors.length - 1), () => hint('已開啟專案：' + f.name + '（' + floors.length + ' 個樓層）', 3000));
+        enterFloor(cu, () => hint('已開啟專案：' + f.name + '（' + floors.length + ' 個樓層）', 3000));
       } catch (err) { alert('開啟失敗：' + err.message); }
       ev.target.value = '';
     };
@@ -4537,7 +4629,7 @@ window.__setShowAreas = function (v) {
       const txt = JSON.stringify(slots);
       if (txt.length > 4.8 * 1024 * 1024) { hint('⚠ 多樓層太大，自動存檔只保留目前樓層。請用「存專案」', 5000); return; }
       localStorage.setItem('geju.autosave.v2', txt);
-    } catch (e) {}
+    } catch (e) { hint('⚠ 多樓層自動存檔失敗（瀏覽器空間不足？），目前只留下單層的復原點。請用「存專案」', 6000); }
   };
   let pendingSlot = null;
   const baseAR = window.autosaveRead;
@@ -4711,7 +4803,7 @@ window.__setShowAreas = function (v) {
   const PALETTE = ['#e8741a', '#2d7ff9', '#2ba86f', '#d6336c', '#8e5bd6', '#d4a017', '#17a2b8', '#7a8b99', '#c0392b', '#5d6d7e'];
   const cp = document.createElement('div'); cp.id = 'chartPop'; document.body.appendChild(cp);
   let chartKind = 'pie'; try { chartKind = localStorage.getItem('geju.chartKind') || 'pie'; } catch (e) {}
-  function chartData() { return G.roomRows().filter(r => r.ping > 0 && (r.kind === 'main' || r.kind === 'attached') && G.showAreas).map((r, i) => ({ name: r.name, ping: r.ping, color: PALETTE[i % PALETTE.length] })); }
+  function chartData() { return G.roomRows().filter(r => !r.dup && r.ping > 0 && (r.kind === 'main' || r.kind === 'attached') && G.showAreas).map((r, i) => ({ name: r.name, ping: r.ping, color: PALETTE[i % PALETTE.length] })); }
   function chartSVG(kind) {
     const rows = chartData(), tot = rows.reduce((t, r) => t + r.ping, 0);
     const FONT = '"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif';
@@ -4847,7 +4939,7 @@ window.__setShowAreas = function (v) {
     const out = [];
     const P = (c, v) => out.push(String(c), String(v));
     const LINE = (layer, a, b) => { P(0, 'LINE'); P(8, layer); P(10, X(a.x)); P(20, Y(a.y)); P(30, 0); P(11, X(b.x)); P(21, Y(b.y)); P(31, 0); };
-    const TEXT = (layer, x, y, h, str) => { String(str).split('\n').forEach((ln, i) => { if (!ln.trim()) return; P(0, 'TEXT'); P(8, layer); P(10, X(x)); P(20, ((-y * k) - i * h * 1.4).toFixed(2)); P(30, 0); P(40, h.toFixed(2)); P(1, esc(ln)); }); };
+    const TEXT = (layer, x, y, h, str) => { const hk = h * k; String(str).split('\n').forEach((ln, i) => { if (!ln.trim()) return; P(0, 'TEXT'); P(8, layer); P(10, X(x)); P(20, ((-y * k) - i * hk * 1.4).toFixed(2)); P(30, 0); P(40, hk.toFixed(2)); P(1, esc(ln)); }); };   // 字高與行距和座標一樣要換成毫米（原本漏乘 k，CAD 裡文字會小十倍）
     const rect = (layer, o) => { const c = o.aCoords; [[c.tl, c.tr], [c.tr, c.br], [c.br, c.bl], [c.bl, c.tl]].forEach(s => LINE(layer, s[0], s[1])); };
     const layers = { WALL: 7, OPEN: 8, ROOM: 3, FURN: 8, DOOR: 5, TEXT: 2, DIM: 1 };
     const used = new Set();
@@ -5104,7 +5196,7 @@ window.__setShowAreas = function (v) {
       if (fl && n > 1) await go(i);
       const url = await captureFloor();
       let m2 = 0, m2x = 0; const rooms = G.roomRows();
-      rooms.forEach(r => { if (r.m2 && r.kind === 'main') m2 += r.m2; else if (r.m2 && r.kind === 'extra') m2x += r.m2; });     // 增建、庭院不計入室內合計
+      rooms.forEach(r => { if (r.dup) return; if (r.m2 && r.kind === 'main') m2 += r.m2; else if (r.m2 && r.kind === 'extra') m2x += r.m2; });     // 增建、庭院不計入室內合計
       pages.push({ name: fl ? fl.list[i].name : '', img: url ? await loadImg(url) : null, rooms, m2, m2x });
     }
     if (fl && n > 1 && fl.cur !== startIdx) await go(startIdx);
@@ -5424,12 +5516,13 @@ window.__setShowAreas = function (v) {
     const rec = (name, ok, detail) => { results.push(ok); const d = document.createElement('div'); d.className = 'tr'; d.innerHTML = '<span class="' + (ok ? 'ok' : 'ng') + '">' + (ok ? '✅' : '❌') + '</span><span>' + name + (detail ? '　<span style="opacity:.6">' + detail + '</span>' : '') + '</span>'; list.appendChild(d); };
     // 備份＋停用自動存檔、對話框、下載
     const fl = window.__floors; fl.snapshotCurrent();
-    const backup = { json: fl.list[fl.cur].json, scale: G.pxPerM, names: fl.list.map(f => f.name) };
+    const backup = { json: fl.list[fl.cur].json, scale: G.pxPerM, names: fl.list.map(f => f.name), cur: fl.cur, floors: fl.list.map(f => ({ name: f.name, json: f.json, scale: f.scale, hist: f.hist })) };   // 完整備份「所有樓層」，避免還原時只剩一層
     const bakAW = window.autosaveWrite, bakPrompt = window.prompt, bakConfirm = window.confirm, bakClick = HTMLAnchorElement.prototype.click;
     window.autosaveWrite = () => {}; window.prompt = (m, d) => d; window.confirm = () => true; HTMLAnchorElement.prototype.click = function () {};
     const bakU = histMgr.undoStack, bakR = histMgr.redoStack, bakT = histMgr.totalBytes, bakVpt = canvas.viewportTransform.slice();
     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);          // 測試的點擊座標以「畫面沒縮放、沒平移」為準
     histMgr.undoStack = []; histMgr.redoStack = []; histMgr.totalBytes = 0;
+    fl.list.splice(0, fl.list.length, { name: backup.names[backup.cur], json: null, scale: null, hist: null }); fl.setCur(0);     // 測試期間只留一個空樓層（與空白頁相同條件），真實樓層都在 backup 裡
     try {
       suppressHist = true; canvas.clear(); suppressHist = false; bgImage = null; saveHistory();
       G.setPxPerM(100);
@@ -5674,7 +5767,7 @@ window.__setShowAreas = function (v) {
       try {
         suppressHist = true; canvas.clear(); suppressHist = false; G.setPxPerM(null);
         const q = [L(100, 100, 500, 100), L(500, 100, 500, 340), L(500, 340, 100, 340), L(100, 340, 100, 100)];       // 寬 400、高 240（真實 4 m × 3 m → 直向只有 80 單位/m）
-        q.forEach(l => canvas.add(l)); q[0].knownLen = 4; q[1].knownLen = 3; G.setScale(100, true); saveHistory();
+        q.forEach(l => canvas.add(l)); q[0].knownLen = 4; q[0].knownSrc = 'center'; q[1].knownLen = 3; q[1].knownSrc = 'center'; G.setScale(100, true); saveHistory();
         G.addRoomAt({ x: 300, y: 220 }); await sleep(80);
         canvas.setActiveObject(new fabric.ActiveSelection(q.slice(), { canvas }));          // 故意先框選（晟華實際踩到：框選中按調整會整批跑位）
         const before = G.roomM2(G.roomPolys()[0]), r = window.gejuFitXY(true); await sleep(120);
@@ -5706,20 +5799,271 @@ window.__setShowAreas = function (v) {
       rec('立體示意圖可繪出', isoOk);
       // 11d 牆長校正：兩道已知長度（有 2% 的差）→ 最小平方比例與誤差
       suppressHist = true; canvas.clear(); suppressHist = false; G.setPxPerM(null);
-      const kw1 = L(0, 0, 300, 0), kw2 = L(0, 50, 0, 250); kw1.knownLen = 6; kw2.knownLen = 4.08;    // 300px→6m(50px/m)；200px→4.08m(≈49px/m)
+      const kw1 = L(0, 0, 300, 0), kw2 = L(0, 50, 0, 250); kw1.knownLen = 6; kw1.knownSrc = 'center'; kw2.knownLen = 4.08; kw2.knownSrc = 'center';    // 300px→6m(50px/m)；200px→4.08m(≈49px/m)
       canvas.add(kw1); canvas.add(kw2); const ks = window.__geju7.knownStats();
       window.gejuCalibKnown(); await sleep(60);
       rec('牆長校正：多道已知長度求比例，並顯示誤差', !!ks && Math.abs(G.pxPerM - 49.8) < 1.0 && Math.abs(ks.rows[0].err) < 0.03, G.pxPerM ? f2(G.pxPerM) + ' px/m，誤差 ' + ks.rows.map(r => (r.err * 100).toFixed(1) + '%').join('／') : '失敗');
+      // ── 10-13 Codex 審查補上的回歸檢查（都在測試用的空白單層裡跑，不碰你的圖）──
+      const clr = () => { suppressHist = true; canvas.clear(); suppressHist = false; canvas.discardActiveObject(); };
+      // 復原：比例跟著那一步回去
+      try {
+        clr(); G.setPxPerM(100); canvas.add(L(50, 50, 450, 50)); saveHistory(); G.setScale(50); await sleep(80);
+        undo(); await sleep(350); const sU = G.pxPerM; redo(); await sleep(350); const sR = G.pxPerM;
+        rec('復原／重做：比例跟著那一步回去（不會圖回舊位置、比例留新值）', sU === 100 && sR === 50, '復原→' + sU + '／重做→' + sR);
+      } catch (e) { rec('復原／重做：比例跟著那一步回去', false, e.message); }
+      // 同一空間兩個房名：合計只算一次
+      try {
+        clr(); G.setPxPerM(100); [L(50, 50, 450, 50), L(450, 50, 450, 350), L(450, 350, 50, 350), L(50, 350, 50, 50)].forEach(l => canvas.add(l)); const mid = L(250, 50, 250, 350); canvas.add(mid); saveHistory(); await sleep(150);
+        G.addRoomAt({ x: 150, y: 200 }); G.addRoomAt({ x: 350, y: 200 }); await sleep(150);
+        canvas.remove(mid); saveHistory(); await sleep(450);
+        const rr = G.roomRows(), tot = rr.filter(r => !r.dup).reduce((t, r) => t + r.m2, 0);
+        rec('刪掉隔間牆後兩個房名占同一空間：合計只算一次（12㎡，不是 24㎡）', rr.length === 2 && rr.filter(r => r.dup).length === 1 && Math.abs(tot - 12) < 0.05, rr.map(r => f2(r.m2) + (r.dup ? '(同空間)' : '')).join('／'));
+      } catch (e) { rec('刪掉隔間牆後兩個房名占同一空間：合計只算一次', false, e.message); }
+      // 牆整體平移，房間色塊跟著動
+      try {
+        clr(); G.setPxPerM(100); const ws4 = [L(50, 50, 450, 50), L(450, 50, 450, 350), L(450, 350, 50, 350), L(50, 350, 50, 50)]; ws4.forEach(l => canvas.add(l)); saveHistory(); await sleep(150);
+        G.addRoomAt({ x: 200, y: 200 }); await sleep(150); const r0 = G.roomPolys()[0], x0 = r0.left;
+        ws4.forEach(l => { l.set({ left: l.left + 10, top: l.top + 10 }); l.setCoords(); }); saveHistory(); await sleep(450);
+        const r1 = G.roomPolys()[0]; rec('牆整體平移（面積不變）：房間色塊輪廓跟著移動', r1 && Math.abs(r1.left - x0 - 10) < 1, '位移 ' + (r1 ? (r1.left - x0).toFixed(1) : '無'));
+      } catch (e) { rec('牆整體平移：房間色塊輪廓跟著移動', false, e.message); }
+      // 尺寸線翻面：量測來源不流失
+      try {
+        clr(); G.setPxPerM(100); const dm2 = window.__makeDim({ x: 100, y: 100 }, { x: 400, y: 100 }, -30); dm2.knownLen = 3; dm2.knownSrc = 'measure'; canvas.setActiveObject(dm2); saveHistory(); await sleep(100);
+        const fb2 = [...document.querySelectorAll('#dimBar button')].find(b => /翻到另一側/.test(b.textContent)); if (fb2) { fb2.click(); await sleep(250); }
+        const d2 = canvas.getObjects().find(o => o.name === '尺寸線');
+        rec('尺寸線翻到另一側：已知長度與量測來源都保留', !!fb2 && !!d2 && d2.knownLen === 3 && d2.knownSrc === 'measure', d2 ? (d2.knownLen + ' m／' + d2.knownSrc) : '找不到');
+      } catch (e) { rec('尺寸線翻到另一側：量測來源保留', false, e.message); }
+      // 同一道牆兩扇門：移除後牆不重疊
+      try {
+        clr(); G.setPxPerM(100); const w2 = L(0, 300, 1000, 300); w2.wallStyle = 'inner'; canvas.add(w2); saveHistory(); await sleep(100);
+        const segsX = () => canvas.getObjects().filter(o => o.type === 'line' && !o._isHandle).map(l => { const e = G.absEnds(l); return [Math.min(e.p1.x, e.p2.x), Math.max(e.p1.x, e.p2.x)]; }).sort((a, b) => a[0] - b[0]);
+        const putDoor = async x => { addObj('door'); await sleep(110); const d = canvas.getActiveObject(), hh = d.getScaledHeight() / 2; d.rotate(0); d.setPositionByOrigin(new fabric.Point(x, 300 - hh), 'center', 'center'); d.setCoords(); canvas.fire('object:moving', { target: d }); canvas.fire('object:modified', { target: d }); await sleep(180); return d; };
+        const da = await putDoor(200), db = await putDoor(700); const s2 = segsX();
+        canvas.remove(da); canvas.remove(db); canvas.discardActiveObject(); saveHistory(); await sleep(250); const s3 = segsX();
+        rec('同一道牆放兩扇門再移除：牆接回一整道、沒有重疊', s2.length === 3 && s3.length === 1 && Math.abs(s3[0][1] - s3[0][0] - 1000) < 1, '兩門 ' + s2.length + ' 段 → 移除後 ' + s3.length + ' 段');
+      } catch (e) { rec('同一道牆放兩扇門再移除', false, e.message); }
+      // 開專案失敗：原樓層不被換掉
+      try {
+        const nBefore = fl.list.length, alertBak = window.alert; window.alert = () => {};
+        const evFail = { target: { files: [new File([JSON.stringify({ format: 'geju.project', schemaVersion: 2, floors: [] })], 'x.geju.json')], value: '' } };
+        window.openProjectFile(evFail); await sleep(300); window.alert = alertBak;
+        rec('開啟壞掉的專案檔：原本的樓層清單不被換掉', fl.list.length === nBefore, '樓層數 ' + nBefore + '→' + fl.list.length);
+      } catch (e) { rec('開啟壞掉的專案檔：原本的樓層清單不被換掉', false, e.message); }
+      // 圖層名稱不當程式執行
+      try { const bad = '<img src=x onerror=1>'; rec('圖層名稱：特殊符號當文字顯示、不當程式執行', escLayer(bad).indexOf('<') < 0 && escLayer(bad).indexOf('&lt;img') === 0, '已跳脫'); }
+      catch (e) { rec('圖層名稱跳脫', false, e.message); }
+      // 軸線法預覽不可偷改牆厚；內牆之間的差值不可反推外牆厚
+      try {
+        clr(); G.setPxPerM(100); const P16 = window.__geju16, T0b = Object.assign({}, P16.T);
+        const K = (a, b, c, d, m, src) => { const l = L(a, b, c, d); if (m) { l.knownLen = m; l.knownSrc = src; } canvas.add(l); return l; };
+        P16.T.ext = 0.3; P16.T.auto = true;
+        K(50, 50, 450, 50, 4.2, 'survey'); K(50, 350, 450, 350, 3.8, 'measure'); K(50, 50, 50, 350); K(450, 50, 450, 350);
+        const pa = P16.plan(), keep1 = P16.T.ext;
+        clr(); [K(50, 50, 450, 50), K(50, 350, 450, 350), K(50, 50, 50, 350), K(450, 50, 450, 350), K(250, 50, 250, 350), K(50, 200, 250, 200, 2.12, 'survey'), K(50, 210, 250, 210, 2.0, 'measure')];
+        P16.T.ext = 0.2; const pb = P16.plan(), keep2 = P16.T.ext;
+        Object.assign(P16.T, T0b);
+        rec('軸線法預覽：不改牆厚設定；只有「外緣到外緣整段」才反推外牆厚', /自動算出/.test(pa.note || '') && keep1 === 0.3 && !(pb.note || '') && keep2 === 0.2, '外緣整段→' + (/自動算出/.test(pa.note || '') ? '有反推' : '沒反推') + '、設定保持 ' + keep1 + '；內牆差值→' + (pb.note ? '誤反推' : '不反推'));
+      } catch (e) { rec('軸線法預覽不改牆厚', false, e.message); }
+      // 拆出新樓層：比例待校正（不沿用）
+      try { G.setPxPerM(50); await new Promise(r => fl.newFloor('測試拆出', r, null)); const sc = G.pxPerM; rec('拆出新樓層：比例不沿用，待重新校正（避免面積錯放十倍）', sc == null, '新樓層比例＝' + sc); }
+      catch (e) { rec('拆出新樓層：比例待校正', false, e.message); }
+      // 三個校正入口共用「成果圖外緣→中心線」換算：無失真矩形（成果圖 4.2×3.2、外牆各 20 cm）三種方法都要得到同一個比例
+      try {
+        clr(); const P16 = window.__geju16, T0c = Object.assign({}, P16.T); P16.T.ext = 0.2; P16.T.int = 0.12; P16.T.auto = false;
+        G.setPxPerM(100);
+        const R4 = [L(0, 0, 400, 0), L(400, 0, 400, 300), L(400, 300, 0, 300), L(0, 300, 0, 0)]; R4.forEach(l => canvas.add(l));
+        R4[0].knownLen = 4.2; R4[0].knownSrc = 'survey'; R4[1].knownLen = 3.2; R4[1].knownSrc = 'survey'; saveHistory(); await sleep(60);
+        const st0 = window.__geju7.knownStats(), sScalar = st0 && st0.s;
+        const fx = window.gejuFitXY(true); await sleep(80);
+        const pa2 = P16.plan(), eAx = Math.max(0, ...pa2.sx.rows.concat(pa2.sy.rows).map(r => Math.abs(r.err)));
+        // F10：圖外多一條虛線（不是牆），不可改變外牆判斷
+        const dash = new fabric.Line([-60, 150, 460, 150], { stroke: '#888', strokeWidth: 2, strokeDashArray: [4, 4], selectable: true, evented: true }); canvas.add(dash);
+        const pb2 = P16.plan(), cA = P16.centerM(P16.items()[0]);
+        Object.assign(P16.T, T0c);
+        rec('三個校正入口同一基準；圖外虛線不影響外牆判斷（4.2→中心線 4.0）', st0 && Math.abs(sScalar - 100) < 0.2 && !fx.err && Math.abs(fx.sx - 100) < 0.2 && Math.abs(fx.sy - 100) < 0.2 && eAx < 0.005 && Math.abs(cA - 4.0) < 0.001, '牆長校正 ' + (sScalar ? sScalar.toFixed(1) : '-') + '／橫直 ' + (fx.sx ? fx.sx.toFixed(1) + '、' + fx.sy.toFixed(1) : fx.err) + '／軸線誤差 ' + (eAx * 100).toFixed(2) + '%／中心線 ' + (cA ? cA.toFixed(3) : '-'));
+      } catch (e) { rec('三個校正入口同一基準', false, e.message); }
+      // F15：外框 12 ㎡ 內含 1 ㎡ 小房間 → 外區 11 ＋ 內區 1 ＝ 12，不是 13
+      try {
+        clr(); G.setPxPerM(100);
+        [L(0, 0, 400, 0), L(400, 0, 400, 300), L(400, 300, 0, 300), L(0, 300, 0, 0), L(100, 100, 200, 100), L(200, 100, 200, 200), L(200, 200, 100, 200), L(100, 200, 100, 100)].forEach(l => canvas.add(l)); saveHistory(); await sleep(150);
+        G.addRoomAt({ x: 350, y: 250 }); G.addRoomAt({ x: 150, y: 150 }); await sleep(250);
+        const rr2 = G.roomRows(), tot2 = rr2.reduce((t, r) => t + (r.dup ? 0 : r.m2 || 0), 0);
+        rec('房間裡包著小房間：外圈扣掉內圈，合計 12㎡（不是 13㎡）', rr2.length === 2 && Math.abs(tot2 - 12) < 0.05, rr2.map(r => f2(r.m2)).join(' ＋ ') + ' ＝ ' + f2(tot2) + '㎡');
+      } catch (e) { rec('房間裡包著小房間', false, e.message); }
+      // ── Codex R7 複測補上的反例 ──
+      const poly = pts => pts.map((q, i) => L(q[0], q[1], pts[(i + 1) % pts.length][0], pts[(i + 1) % pts.length][1]));
+      // L 形外框內含 L 形小房間：外環 3.04＋內區 3.96＝7（不是 10.96）
+      try {
+        clr(); G.setPxPerM(100); const sh = 100, gapBak = G.gapCm; G.setGapCm(10);          // 兩層 L 只隔 20 cm，封口距離要小，否則兩環會被「補橋」連成一塊
+        const OL = [[0, 0], [400, 0], [400, 100], [100, 100], [100, 400], [0, 400]].map(q => [q[0] + sh, q[1] + sh]);
+        const IL = [[20, 20], [380, 20], [380, 80], [80, 80], [80, 380], [20, 380]].map(q => [q[0] + sh, q[1] + sh]);
+        poly(OL).concat(poly(IL)).forEach(l => canvas.add(l)); saveHistory(); await sleep(150);
+        G.addRoomAt({ x: 105, y: 150 + 0 }); G.addRoomAt({ x: 150, y: 150 }); await sleep(250);
+        const rl = G.roomRows(), tl = rl.reduce((t, r) => t + (r.dup ? 0 : r.m2 || 0), 0);
+        G.setGapCm(gapBak);
+        rec('L 形外框內含 L 形小房間：外環扣掉內環，合計 7㎡（不是 10.96㎡）', rl.length === 2 && Math.abs(tl - 7) < 0.05, rl.map(r => f2(r.m2)).join(' ＋ ') + ' ＝ ' + f2(tl) + '㎡');
+      } catch (e) { rec('L 形巢狀房間', false, e.message); }
+      // 內部兩間合併成一間：同一個洞只扣一次（8＋2＝10 不對，應為 12）
+      try {
+        clr(); G.setPxPerM(100);
+        [L(0, 0, 400, 0), L(400, 0, 400, 300), L(400, 300, 0, 300), L(0, 300, 0, 0), L(100, 100, 300, 100), L(300, 100, 300, 200), L(300, 200, 100, 200), L(100, 200, 100, 100)].forEach(l => canvas.add(l));
+        const part2 = L(200, 100, 200, 200); canvas.add(part2); saveHistory(); await sleep(150);
+        G.addRoomAt({ x: 350, y: 250 }); G.addRoomAt({ x: 150, y: 150 }); G.addRoomAt({ x: 250, y: 150 }); await sleep(300);
+        canvas.remove(part2); saveHistory(); await sleep(500);
+        const r3 = G.roomRows(), t3 = r3.reduce((t, r) => t + (r.dup ? 0 : r.m2 || 0), 0);
+        rec('內部兩間合併成同一空間：同一個洞只扣一次，合計 12㎡', Math.abs(t3 - 12) < 0.05, r3.map(r => f2(r.m2) + (r.dup ? '(同空間)' : '')).join('／') + ' ＝ ' + f2(t3) + '㎡');
+      } catch (e) { rec('內部房間合併後的洞只扣一次', false, e.message); }
+      // 開「扣牆厚」：洞要用向外擴到牆外表面的面積扣（4×3 內含 1×1，牆厚 15 cm → 9.65＋0.7225＝10.3725）
+      try {
+        clr(); G.setPxPerM(100);
+        [L(0, 0, 400, 0), L(400, 0, 400, 300), L(400, 300, 0, 300), L(0, 300, 0, 0), L(100, 100, 200, 100), L(200, 100, 200, 200), L(200, 200, 100, 200), L(100, 200, 100, 100)].forEach(l => canvas.add(l)); saveHistory(); await sleep(150);
+        G.addRoomAt({ x: 350, y: 250 }); G.addRoomAt({ x: 150, y: 150 }); await sleep(250);
+        const apn = document.getElementById('areaPanel'); apn.classList.add('show'); G.renderAreaPanel(); await sleep(60);
+        const nt = document.getElementById('apNet'), tt = document.getElementById('apT'), netBak = nt && nt.checked, tBak = tt && tt.value;
+        if (tt) { tt.value = '15'; tt.onchange && tt.onchange(); } if (nt) { nt.checked = true; nt.onchange && nt.onchange(); } await sleep(120);
+        const rn = G.roomRows(), tn = rn.reduce((t, r) => t + (r.dup ? 0 : r.m2 || 0), 0);
+        if (nt) { nt.checked = !!netBak; nt.onchange && nt.onchange(); } if (tt) { tt.value = tBak; tt.onchange && tt.onchange(); }
+        rec('淨面積＋內含小房間：洞按牆外表面扣（10.3725㎡，不是 10.9725）', Math.abs(tn - 10.3725) < 0.01, rn.map(r => f2(r.m2)).join(' ＋ ') + ' ＝ ' + tn.toFixed(4) + '㎡');
+      } catch (e) { rec('淨面積＋內含小房間', false, e.message); }
+      // F10：遠處孤立的實線不是主體牆；尺寸端點不靠牆＝不明
+      try {
+        clr(); G.setPxPerM(100); const P16 = window.__geju16, T0d = Object.assign({}, P16.T); P16.T.ext = 0.2; P16.T.int = 0.12; P16.T.auto = false;
+        const Rr = [L(0, 0, 400, 0), L(400, 0, 400, 300), L(400, 300, 0, 300), L(0, 300, 0, 0)]; Rr.forEach(l => canvas.add(l)); Rr[0].knownLen = 4.2; Rr[0].knownSrc = 'survey';
+        const stray = L(-600, -600, -550, -600); canvas.add(stray);
+        const c1 = P16.centerOfObj(Rr[0]);
+        const dimU = window.__makeDim({ x: 150, y: 150 }, { x: 350, y: 150 }, 20); dimU.knownLen = 2.0; dimU.knownSrc = 'survey';
+        const c2 = P16.centerOfObj(dimU), pu = P16.plan();
+        Object.assign(P16.T, T0d);
+        rec('外牆判斷：遠處孤立實線不影響（4.2→4.0）；端點不靠任何牆＝不明、不納入校正', Math.abs(c1 - 4.0) < 0.001 && c2 == null && /無法確定端點/.test(pu.note || ''), '4.2→' + (c1 && c1.toFixed(3)) + '；不靠牆的尺寸→' + c2);
+      } catch (e) { rec('外牆判斷：孤立實線與不明端點', false, e.message); }
+      // F11＋F13：自動反推出的牆厚，三個入口用同一個值（設定 30 cm、反推 20 cm → 都用 20 cm，設定仍是 30）
+      try {
+        clr(); G.setPxPerM(100); const P16 = window.__geju16, T0e = Object.assign({}, P16.T); P16.T.ext = 0.3; P16.T.int = 0.12; P16.T.auto = true;
+        const R5 = [L(0, 0, 400, 0), L(400, 0, 400, 300), L(400, 300, 0, 300), L(0, 300, 0, 0)]; R5.forEach(l => canvas.add(l));
+        R5[0].knownLen = 4.2; R5[0].knownSrc = 'survey'; R5[2].knownLen = 3.8; R5[2].knownSrc = 'measure';
+        const cS = P16.centerOfObj(R5[0]), cM = P16.centerOfObj(R5[2]), pp = P16.plan(), keep = P16.T.ext;
+        const rowsAx = pp.sx.rows.map(r => r.want);
+        Object.assign(P16.T, T0e);
+        rec('自動反推牆厚：三個入口用同一個有效牆厚（都換成 4.0），且不改設定', Math.abs(cS - 4.0) < 0.001 && Math.abs(cM - 4.0) < 0.001 && rowsAx.every(w => Math.abs(w - 4.0) < 0.001) && keep === 0.3, '牆長/橫直入口 ' + cS.toFixed(3) + '、' + cM.toFixed(3) + '；軸線法目標 ' + rowsAx.map(w => w.toFixed(3)).join('、') + '；設定仍 ' + keep);
+      } catch (e) { rec('自動反推牆厚三入口一致', false, e.message); }
+      // CSV：同空間重複的房名不輸出面積
+      try {
+        clr(); G.setPxPerM(100);
+        [L(50, 50, 450, 50), L(450, 50, 450, 350), L(450, 350, 50, 350), L(50, 350, 50, 50)].forEach(l => canvas.add(l)); const mid2 = L(250, 50, 250, 350); canvas.add(mid2); saveHistory(); await sleep(120);
+        G.addRoomAt({ x: 150, y: 200 }); G.addRoomAt({ x: 350, y: 200 }); await sleep(150); canvas.remove(mid2); saveHistory(); await sleep(450);
+        let csvBlob = null; const oc2 = URL.createObjectURL; URL.createObjectURL = b => { csvBlob = b; return oc2.call(URL, b); };
+        window.gejuCsvAreas(); await sleep(300); URL.createObjectURL = oc2;
+        const lines = csvBlob ? (await csvBlob.text()).split('\n').filter(x => x.trim() && !/房間,類別/.test(x)) : [];
+        rec('CSV：同空間重複的房名不輸出面積（只一筆 12，不會加總成 24）', csvBlob && lines.length === 1, '輸出 ' + lines.length + ' 列');
+      } catch (e) { rec('CSV 去重', false, e.message); }
+      // ── Codex R8 複測補上的反例 ──
+      // 兩個互補的三角形（外框、面積、頂點數都一樣）不是同一個空間：合計 12，不是 6
+      try {
+        clr(); G.setPxPerM(100);
+        [L(0, 0, 400, 0), L(400, 0, 400, 300), L(400, 300, 0, 300), L(0, 300, 0, 0), L(0, 0, 400, 300)].forEach(l => canvas.add(l)); saveHistory(); await sleep(150);
+        G.addRoomAt({ x: 300, y: 80 }); G.addRoomAt({ x: 100, y: 220 }); await sleep(250);
+        const rt = G.roomRows(), tt2 = rt.reduce((t, r) => t + (r.dup ? 0 : r.m2 || 0), 0);
+        rec('兩個互補的三角形不被誤判成同一空間：合計 12㎡（不是 6㎡）', rt.length === 2 && rt.every(r => !r.dup) && Math.abs(tt2 - 12) < 0.05, rt.map(r => f2(r.m2) + (r.dup ? '(誤判同空間)' : '')).join('／') + ' ＝ ' + f2(tt2) + '㎡');
+      } catch (e) { rec('互補三角形不誤判', false, e.message); }
+      // 凹形外牆（L 形內凹角的牆）不在最外側，但仍是外牆：成果圖 2.2 → 中心線 2.0（不是 2.1）
+      try {
+        clr(); G.setPxPerM(100); const P16 = window.__geju16, T0f = Object.assign({}, P16.T); P16.T.ext = 0.2; P16.T.int = 0.12; P16.T.auto = false;
+        const LL = [[0, 0], [400, 0], [400, 200], [200, 200], [200, 400], [0, 400]]; LL.forEach((q, i) => canvas.add(L(q[0], q[1], LL[(i + 1) % LL.length][0], LL[(i + 1) % LL.length][1])));
+        const dn = window.__makeDim({ x: 0, y: 300 }, { x: 200, y: 300 }, 20); dn.knownLen = 2.2; dn.knownSrc = 'survey';
+        const cn = P16.centerOfObj(dn);
+        // 對照：真正的內牆（兩側都是房間）仍要當內牆
+        const part3 = L(200, 0, 200, 200); canvas.add(part3);
+        const dm3 = window.__makeDim({ x: 0, y: 100 }, { x: 200, y: 100 }, 20); dm3.knownLen = 1.84; dm3.knownSrc = 'measure';
+        const ci = P16.centerOfObj(dm3);
+        Object.assign(P16.T, T0f);
+        rec('凹形外牆仍是外牆（2.2→2.0）；兩側都是房間的牆才是內牆（實量 1.84→2.0）', Math.abs(cn - 2.0) < 0.001 && Math.abs(ci - 2.0) < 0.001, '凹角外牆→' + (cn && cn.toFixed(3)) + '；內牆→' + (ci && ci.toFixed(3)));
+      } catch (e) { rec('凹形外牆判斷', false, e.message); }
+      // 一次校正只存一個復原步驟
+      try {
+        clr(); G.setPxPerM(null); const lk = L(0, 0, 300, 0); lk.knownLen = 6; lk.knownSrc = 'center'; canvas.add(lk); saveHistory(); await sleep(100);
+        let saves = 0; const svB = histMgr.save; histMgr.save = function (j) { saves++; return svB.call(this, j); };       // 計「存了幾次歷史」（歷史上限 100 步，不能用長度比）
+        try { window.gejuCalibKnown(); await sleep(150); } finally { histMgr.save = svB; }
+        rec('用已知長度校正比例：只存一個復原步驟（一次復原就回到校正前）', saves === 1, '存歷史 ' + saves + ' 次');
+      } catch (e) { rec('校正只存一步', false, e.message); }
+      // ── Codex R9 複測補上的反例 ──
+      // U 形建物：缺口兩側的牆都是外牆（成果圖 1.2 → 中心線 1.0），射線穿過室外打到另一翼不能算「室內」
+      try {
+        clr(); G.setPxPerM(100); const P16 = window.__geju16, T0g = Object.assign({}, P16.T); P16.T.ext = 0.2; P16.T.int = 0.12; P16.T.auto = false;
+        const UU = [[100, 100], [500, 100], [500, 500], [400, 500], [400, 200], [200, 200], [200, 500], [100, 500]]; UU.forEach((q, i) => canvas.add(L(q[0], q[1], UU[(i + 1) % UU.length][0], UU[(i + 1) % UU.length][1])));
+        const du = window.__makeDim({ x: 100, y: 350 }, { x: 200, y: 350 }, 20); du.knownLen = 1.2; du.knownSrc = 'survey';
+        const cu = P16.centerOfObj(du); Object.assign(P16.T, T0g);
+        rec('U 形外牆：缺口兩側都是外牆（成果圖 1.2→1.0，不被另一翼的牆騙成內牆）', cu != null && Math.abs(cu - 1.0) < 0.001, '1.2→' + (cu && cu.toFixed(3)));
+      } catch (e) { rec('U 形外牆判斷', false, e.message); }
+      // 外牆有三個門洞：內牆兩側的射線不能從門洞漏出去（實量 3.82 → 加半個內牆 8cm、半個外牆 10cm ＝ 4.00）
+      try {
+        clr(); G.setPxPerM(100); const P16 = window.__geju16, T0h = Object.assign({}, P16.T); P16.T.ext = 0.2; P16.T.int = 0.16; P16.T.auto = false;
+        const wl = [L(100, 100, 700, 100), L(700, 100, 700, 500), L(700, 500, 100, 500), L(100, 500, 100, 100), L(300, 100, 300, 500)]; wl.forEach(l => { l.wallStyle = 'inner'; canvas.add(l); }); saveHistory(); await sleep(120);
+        for (const y of [180, 300, 420]) {
+          addObj('door-slide'); await sleep(110); const d = canvas.getActiveObject(); d.set('scaleX', 70 / d.width); d.rotate(90); d.setPositionByOrigin(new fabric.Point(100, y), 'center', 'center'); d.setCoords();       // 70 px 寬的拉門
+          canvas.fire('object:moving', { target: d }); canvas.fire('object:modified', { target: d }); await sleep(160);
+        }
+        const leftSegs = canvas.getObjects().filter(o => o.type === 'line' && !o._isHandle).filter(l => { const e = G.absEnds(l); return Math.abs(e.p1.x - 100) < 3 && Math.abs(e.p2.x - 100) < 3; }).length;
+        const dd = window.__makeDim({ x: 300, y: 250 }, { x: 700, y: 250 }, 20); dd.knownLen = 3.82; dd.knownSrc = 'measure';
+        const cd = P16.centerOfObj(dd); Object.assign(P16.T, T0h);
+        rec('外牆有三個門洞：內牆仍判成內牆（實量 3.82→4.00，不是 4.02）', leftSegs >= 3 && cd != null && Math.abs(cd - 4.0) < 0.001, '左牆被切成 ' + leftSegs + ' 段；3.82→' + (cd && cd.toFixed(3)));
+      } catch (e) { rec('外牆多門洞的內牆判斷', false, e.message); }
+      // ── Codex R10 複測補上的反例 ──
+      // 有彎折入口的凹入室外空間：四個方向都碰得到牆，但那裡是室外（成果圖 3.2 → 3.0）
+      try {
+        clr(); G.setPxPerM(100); const P16 = window.__geju16, T0i = Object.assign({}, P16.T); P16.T.ext = 0.2; P16.T.int = 0.12; P16.T.auto = false;
+        const BP = [[100, 100], [250, 100], [250, 200], [400, 200], [400, 400], [450, 400], [450, 150], [300, 150], [300, 100], [500, 100], [500, 500], [100, 500]];
+        BP.forEach((q, i) => canvas.add(L(q[0], q[1], BP[(i + 1) % BP.length][0], BP[(i + 1) % BP.length][1])));
+        const db = window.__makeDim({ x: 100, y: 300 }, { x: 400, y: 300 }, 20); db.knownLen = 3.2; db.knownSrc = 'survey';
+        const cb = P16.centerOfObj(db); Object.assign(P16.T, T0i);
+        rec('彎折入口的凹入室外空間：該側牆是外牆（成果圖 3.2→3.0，不是 3.1）', cb != null && Math.abs(cb - 3.0) < 0.001, '3.2→' + (cb && cb.toFixed(3)));
+      } catch (e) { rec('彎折凹入室外空間', false, e.message); }
+      // 低圖面比例＋窄房間：同一個格局，不管圖面是 10、20、50、100 單位/公尺，結果都是 3.40
+      try {
+        const P16 = window.__geju16, T0j = Object.assign({}, P16.T); P16.T.ext = 0.2; P16.T.int = 0.16; P16.T.auto = false;
+        const outs = [];
+        for (const pm of [10, 20, 50, 100]) {
+          clr(); G.setPxPerM(pm); const o = 100, W = 4 * pm, px6 = 0.6 * pm;
+          [L(o, o, o + W, o), L(o + W, o, o + W, o + W), L(o + W, o + W, o, o + W), L(o, o + W, o, o), L(o + px6, o, o + px6, o + W)].forEach(l => canvas.add(l));
+          const dn = window.__makeDim({ x: o + px6, y: o + W / 2 }, { x: o + W, y: o + W / 2 }, 20); dn.knownLen = 3.22; dn.knownSrc = 'measure';
+          const c = P16.centerOfObj(dn); outs.push(c == null ? 'null' : c.toFixed(3));
+        }
+        Object.assign(P16.T, T0j);
+        rec('低圖面比例＋窄房間：10／20／50／100 單位每公尺，實量 3.22 都得 3.40（或明確回報不確定，不會錯算）', outs.every(v => v === '3.400' || v === 'null') && outs.filter(v => v === '3.400').length >= 3, outs.join('／'));
+      } catch (e) { rec('低比例窄房間的內外牆判斷', false, e.message); }
+      // ── Codex R11 複測補上的反例 ──
+      // 已標成「庭院（不計）」的天井是露天：面向它的牆是外牆（成果圖 1.7 → 1.5）；標之前無法知道，維持 1.6
+      try {
+        clr(); G.setPxPerM(100); const P16 = window.__geju16, T0k = Object.assign({}, P16.T); P16.T.ext = 0.2; P16.T.int = 0.16; P16.T.auto = false;
+        [[100, 100, 500, 100], [500, 100, 500, 500], [500, 500, 100, 500], [100, 500, 100, 100], [250, 250, 350, 250], [350, 250, 350, 350], [350, 350, 250, 350], [250, 350, 250, 250], [100, 300, 250, 300]].forEach(a => canvas.add(L(a[0], a[1], a[2], a[3])));
+        saveHistory(); await sleep(150);
+        const dy = window.__makeDim({ x: 100, y: 300 }, { x: 250, y: 300 }, 20); dy.knownLen = 1.7; dy.knownSrc = 'survey';
+        const before = P16.centerOfObj(dy);
+        G.addRoomAt({ x: 300, y: 300 }); await sleep(250);
+        const yr = G.roomPolys().find(r => r.points && Math.abs(r.roomPx2 - 10000) < 50); if (yr) window.__setRoomKind(yr.roomId, 'yard'); await sleep(150);
+        const after = P16.centerOfObj(dy); Object.assign(P16.T, T0k);
+        rec('庭院／天井標成「不計」後是露天：面向它的牆是外牆（成果圖 1.7→1.5；標之前 1.6）', !!yr && before != null && Math.abs(before - 1.6) < 0.001 && after != null && Math.abs(after - 1.5) < 0.001, '標前 ' + (before && before.toFixed(3)) + '／標後 ' + (after && after.toFixed(3)));
+      } catch (e) { rec('庭院／天井外牆判斷', false, e.message); }
+      // 同一張最終圖，不管之前算過什麼，結果都一樣（快取不能因取整而沿用過期幾何）
+      try {
+        const P16 = window.__geju16, T0m = Object.assign({}, P16.T); P16.T.ext = 0.2; P16.T.int = 0.16; P16.T.auto = false;
+        const build = gap => {
+          clr(); G.setPxPerM(100);
+          [[100, 100, 700, 100], [700, 100, 700, 500], [100, 500, 700, 500], [300, 100, 300, 500], [100, 100, 100, 290], [100, 290 + gap, 100, 500]].forEach(a => canvas.add(L(a[0], a[1], a[2], a[3])));
+          const d = window.__makeDim({ x: 300, y: 300 }, { x: 700, y: 300 }, 20); d.knownLen = 3.82; d.knownSrc = 'measure'; return P16.centerOfObj(d);
+        };
+        const a49 = build(4.9), b51 = build(5.1);                        // 暖快取：先算 4.9 再算 5.1
+        clr(); G.setPxPerM(100); canvas.add(L(0, 0, 100, 0)); canvas.add(L(0, 0, 0, 100)); const dd0 = window.__makeDim({ x: 0, y: 0 }, { x: 100, y: 0 }, 20); dd0.knownLen = 1; dd0.knownSrc = 'measure'; P16.centerOfObj(dd0);      // 讓快取停在別的圖
+        const c51 = build(5.1);                                            // 冷快取：同一張 5.1 的圖
+        Object.assign(P16.T, T0m);
+        rec('快取不會因座標取整而沿用過期幾何：同一張圖暖算、冷算結果相同', a49 != null && b51 != null && c51 != null && Math.abs(b51 - c51) < 1e-9, '4.9→' + (a49 && a49.toFixed(3)) + '；5.1 暖算 ' + (b51 && b51.toFixed(3)) + '／冷算 ' + (c51 && c51.toFixed(3)));
+      } catch (e) { rec('快取暖冷一致', false, e.message); }
     } catch (e) { rec('檢查過程發生錯誤', false, e.message); }
     // 還原
     try {
-      // 刪掉測試時多出的樓層，回到原本的樓層結構
-      while (fl.list.length > backup.names.length) { fl.list.pop(); }
       histMgr.undoStack = bakU; histMgr.redoStack = bakR; histMgr.totalBytes = bakT;
       window.autosaveWrite = bakAW; window.prompt = bakPrompt; window.confirm = bakConfirm; HTMLAnchorElement.prototype.click = bakClick;
-      fl.list.splice(0, fl.list.length, ...fl.list.slice(0, 1));
-      fl.list[0].name = backup.names[0]; fl.list[0].json = backup.json; fl.list[0].scale = backup.scale; fl.list[0].hist = null;
-      fl.setCur(0); fl.render();
+      fl.list.splice(0, fl.list.length, ...backup.floors.map(f => ({ name: f.name, json: f.json, scale: f.scale, hist: f.hist })));     // 原樓層清單原樣放回
+      fl.setCur(backup.cur); fl.render();
       await new Promise(res => { suppressHist = true; canvas.loadFromJSON(backup.json, () => { bgImage = canvas.getObjects().find(o => o.name === '__bg_image__') || null; suppressHist = false; canvas.renderAll(); res(); }); });
       G.setPxPerM(backup.scale || null); canvas.setViewportTransform(bakVpt); G.renderAreaPanel();
       const bad = results.filter(v => !v).length;
@@ -6014,10 +6358,10 @@ window.__setShowAreas = function (v) {
         suppressHist = true; canvas.add(img); canvas.sendToBack(img); suppressHist = false; bgImage = img; bgVisible = true;
         const bc = $('bgControls'); if (bc) bc.classList.add('show');
         addLines((X, Y) => ({ x: 20 + (X - crop.x) * sc, y: 20 + (Y - crop.y) * sc }));
-        hint('已放到新樓層「' + name + '」：' + r.lines.length + ' 道牆。接著「校正比例」→「房間」', 6000);
+        hint('已放到新樓層「' + name + '」：' + r.lines.length + ' 道牆。⚠ 這層的比例要重新校正（底圖縮放已改變，拼圖各層也未必同一個尺度，不沿用原比例）。接著「校正比例」→「房間」', 8000);
         setMode('select');
-      });
-    });
+      }, null);       // 第三個參數 null＝新樓層不繼承原比例，面積在校正前顯示「尚未校正比例」
+    }, null);
   }
   function hookBox() {
     if (typeof canvas === 'undefined' || !canvas || !canvas.upperCanvasEl) return setTimeout(hookBox, 200);
@@ -6174,7 +6518,10 @@ window.__setShowAreas = function (v) {
   /* ═════ 牆長校正（勘測成果圖的邊長）：多道已知長度做最小平方法，並顯示每道誤差 ═════ */
   function knownWalls() { return canvas.getObjects().filter(o => o.type === 'line' && !o._isHandle && o.knownLen > 0); }
   function knownStats() {
-    const ws = knownWalls().map(o => { const e = G.absEnds(o); return { o, px: Math.hypot(e.p2.x - e.p1.x, e.p2.y - e.p1.y), m: o.knownLen }; }).filter(w => w.px > 3);
+    const cm = o => (window.__geju16 && window.__geju16.centerOfObj) ? window.__geju16.centerOfObj(o) : o.knownLen;       // 與軸線法同一個「換成中心線」規則
+    const all = knownWalls().map(o => { const e = G.absEnds(o); return { o, px: Math.hypot(e.p2.x - e.p1.x, e.p2.y - e.p1.y), m: cm(o) }; }).filter(w => w.px > 3);
+    window.__skipKnown = all.filter(w => !(w.m > 0)).length;                       // 端點不在任何牆上、無法判斷內外牆的已知長度：不納入，要告訴使用者
+    const ws = all.filter(w => w.m > 0);
     if (!ws.length) return null;
     // 以「相對誤差」做最小平方（跟「橫直分開估算」同一種算法，長短牆一視同仁，兩邊數字才對得起來）
     let s1 = 0, s2 = 0; ws.forEach(w => { const r = w.px / w.m; s1 += r; s2 += r * r; });
@@ -6184,9 +6531,9 @@ window.__setShowAreas = function (v) {
   }
   window.gejuCalibKnown = function () {
     const st = knownStats(); if (!st) { G.hint('先選一道牆，在尺寸列輸入「已知長度」', 3000); return; }
-    G.setScale(st.s); canvas.renderAll(); saveHistory();
+    G.setScale(st.s, true); canvas.renderAll(); saveHistory();          // 靜默改比例、只存一次歷史（否則一次校正會變兩個復原步驟）
     const maxErr = Math.max(...knownStats().rows.map(r => Math.abs(r.err)));          // 用新比例重算誤差
-    G.hint('已用 ' + st.rows.length + ' 道已知長度校正：1 公尺＝' + G.f2(st.s) + ' 單位；最大誤差 ' + (maxErr * 100).toFixed(1) + '%' + (maxErr > 0.05 ? '（這張圖本身可能沒照比例，面積只能當估算）' : ''), 7000);
+    G.hint('已用 ' + st.rows.length + ' 道已知長度校正：1 公尺＝' + G.f2(st.s) + ' 單位；最大誤差 ' + (maxErr * 100).toFixed(1) + '%' + (maxErr > 0.05 ? '（這張圖本身可能沒照比例，面積只能當估算）' : '') + (window.__skipKnown ? '；另有 ' + window.__skipKnown + ' 道的端點不在牆上，無法判斷內外牆，沒有納入' : ''), 7000);
   };
   window.gejuSelectWall = function (i) { const ws = knownWalls(); if (ws[i]) { canvas.setActiveObject(ws[i]); canvas.renderAll(); } };
   const prevHook2 = window.__areaHook;
@@ -6424,7 +6771,7 @@ window.__setShowAreas = function (v) {
     });
   }
   hookMove();
-  function rebuild(g, off) { const a = g.dimA, b = g.dimB; canvas.remove(g); const n = window.__makeDim(a, b, off); if (n) { if (g.knownLen) n.knownLen = g.knownLen; canvas.setActiveObject(n); canvas.renderAll(); } return n; }
+  function rebuild(g, off) { const a = g.dimA, b = g.dimB; canvas.remove(g); const n = window.__makeDim(a, b, off); if (n) { if (g.knownLen) n.knownLen = g.knownLen; if (g.knownSrc) n.knownSrc = g.knownSrc; canvas.setActiveObject(n); canvas.renderAll(); } return n; }
 
   window.__dimBar = function (o, bar) {
     if (!o.dimA) return false;
@@ -6435,7 +6782,7 @@ window.__setShowAreas = function (v) {
     bar.classList.add('show');
     $('dmCal').onclick = () => {
       const m = G.parseLen($('dmKnown').value); if (!m) { hint('先填這一段的真實長度，例如 3.5 或 350cm', 3000); return; }
-      G.setScale(len / m); refreshDims(); canvas.renderAll(); saveHistory();
+      G.setScale(len / m, true); refreshDims(); canvas.renderAll(); saveHistory();
       hint('已用這段（' + f2(m) + ' m）校正比例：1 公尺＝' + f2(len / m) + ' 單位', 5000);
       if (window.gejuRefreshBar) window.gejuRefreshBar();
     };
@@ -6502,7 +6849,7 @@ window.__setShowAreas = function (v) {
     const dx = s[2] - s[0], dy = s[3] - s[1], L2 = dx * dx + dy * dy; let t = L2 ? ((px - s[0]) * dx + (py - s[1]) * dy) / L2 : 0; t = Math.max(0, Math.min(1, t));
     return { x: s[0] + t * dx, y: s[1] + t * dy };
   }
-  function snapToWall(o, maxd) {
+  function snapToWall(o, maxd, forceFlip) {
     const k = keyOfObj(o);
     const segs = G.collectWallSegs().filter(s => Math.hypot(s[2] - s[0], s[3] - s[1]) >= 20);
     const c = o.getCenterPoint(), ar = (o.angle || 0) * Math.PI / 180;
@@ -6519,7 +6866,12 @@ window.__setShowAreas = function (v) {
     if (k === 'door') {
       const th = a2 * Math.PI / 180, n = { x: -Math.sin(th), y: Math.cos(th) };
       const side = (c.x - best.q.x) * n.x + (c.y - best.q.y) * n.y;       // 使用者放在牆的哪一側
-      const theta = side < 0 ? a2 : a2 + 180;                             // 讓「開門側」朝向那一側
+      // 方向遲滯：已經有開門側時，游標要明顯越過牆線（約 14 單位）才翻面，避免在牆線附近抖動；forceFlip＝使用者按 X 手動翻面
+      let sgn = side < 0 ? -1 : 1;
+      if (forceFlip && o.__doorSide) sgn = -o.__doorSide;
+      else if (o.__doorSide && sgn !== o.__doorSide && Math.abs(side) < 14 / (canvas.getZoom() || 1)) sgn = o.__doorSide;
+      o.__doorSide = sgn;
+      const theta = sgn < 0 ? a2 : a2 + 180;                             // 讓「開門側」朝向那一側
       const tr = theta * Math.PI / 180, up = { x: Math.sin(tr), y: -Math.cos(tr) };
       o.rotate(theta); o.setPositionByOrigin(new fabric.Point(best.q.x + up.x * hh, best.q.y + up.y * hh), 'center', 'center'); o.setCoords();
       return true;
@@ -6531,6 +6883,7 @@ window.__setShowAreas = function (v) {
     if (typeof canvas === 'undefined' || !canvas) return setTimeout(hookDoors, 150);
     canvas.on('object:moving', e => {
       const o = e.target; if (!o || o.type !== 'group' || WALLKEYS.indexOf(keyOfObj(o)) < 0) return;
+      if (window.__doorAuto === false) return;                              // 手動吸附模式：拖曳時不自動吸
       if (snapToWall(o, 28 / (canvas.getZoom() || 1))) canvas.requestRenderAll();
     });
   }
@@ -6538,7 +6891,7 @@ window.__setShowAreas = function (v) {
   const baseAdd = window.addObj;
   window.addObj = function (type) {
     baseAdd(type);
-    if (WALLKEYS.indexOf(type) >= 0) { const o = canvas.getActiveObject(); if (o && snapToWall(o, 260 / (canvas.getZoom() || 1))) { canvas.renderAll(); saveHistory(); } }
+    if (WALLKEYS.indexOf(type) >= 0 && window.__doorAuto !== false) { const o = canvas.getActiveObject(); if (o && snapToWall(o, 260 / (canvas.getZoom() || 1))) { canvas.renderAll(); saveHistory(); } }
   };
 
   /* ═════ 面積表：標出各房尺寸按鈕＋載入後刷新尺寸線文字 ═════ */
@@ -6551,6 +6904,14 @@ window.__setShowAreas = function (v) {
   };
   window.addEventListener('load', () => setTimeout(refreshDims, 700));
   window.__geju9 = { refreshDims, snapToWall, allDims };
+  /* 門窗吸牆：手動吸一次（G）與翻轉推門開向（X） */
+  window.gejuDoorSnapOnce = function () { const o = canvas.getActiveObject(); if (!o || WALLKEYS.indexOf(keyOfObj(o)) < 0) { hint('請先選一個門或窗', 2000); return false; } if (snapToWall(o, 260 / (canvas.getZoom() || 1))) { canvas.renderAll(); saveHistory(); hint('已吸到最近的牆', 1800); return true; } hint('附近沒有牆可吸', 2000); return false; };
+  window.gejuDoorFlip = function () { const o = canvas.getActiveObject(); if (!o || keyOfObj(o) !== 'door') { hint('請先選一個推門再翻轉開門方向', 2200); return false; } if (!o.__doorSide) snapToWall(o, 260 / (canvas.getZoom() || 1)); if (snapToWall(o, 260 / (canvas.getZoom() || 1), true)) { canvas.renderAll(); saveHistory(); hint('已翻轉開門方向', 1800); return true; } hint('這扇門附近沒有牆，無法翻轉', 2200); return false; };
+  window.addEventListener('keydown', e => {
+    const a = document.activeElement, t = a && a.tagName; if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT' || e.ctrlKey || e.metaKey || e.altKey) return;
+    const ao = canvas && canvas.getActiveObject(); if (!ao || ao.isEditing) return;
+    if (e.key === 'x' || e.key === 'X') window.gejuDoorFlip(); else if (e.key === 'g' || e.key === 'G') window.gejuDoorSnapOnce();
+  });
 })();
 
 </script>
@@ -6664,6 +7025,8 @@ window.__setShowAreas = function (v) {
     for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) { const d = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y); if (d > bd) { bd = d; a = pts[i]; b = pts[j]; } }
     segs.forEach(l => canvas.remove(l));
     const m = mkLine(a, b, orig); canvas.add(m);
+    // 同一道牆上有第二扇門：這一段本來屬於「上一次切開」的一部分 → 接回後要還給上一次切開，否則會多出一道重疊的牆
+    if (orig.parent) { m.cutBy = orig.parent.cutBy; m.cutSeq = orig.parent.cutSeq; m.cutOrig = orig.parent.cutOrig; }
     return m;
   }
   function restoreAll() {
@@ -6701,6 +7064,7 @@ window.__setShowAreas = function (v) {
     if (leftLen >= 3) parts.push(mkLine(best.e.p1, P(s0), pr));
     if (rightLen >= 3) parts.push(mkLine(P(s1), best.e.p2, pr));
     const orig = Object.assign({}, pr, { pA: { x: best.e.p1.x, y: best.e.p1.y }, pB: { x: best.e.p2.x, y: best.e.p2.y } });   // 原牆兩端：門靠牆端時，房間偵測用來補邊界
+    if (best.l.cutBy) orig.parent = { cutBy: best.l.cutBy, cutSeq: best.l.cutSeq, cutOrig: best.l.cutOrig };               // 被切的這段原本屬於更早的一次切開：記下來，接回時才能還原成正確的巢狀關係
     parts.forEach(m => { m.cutBy = id; m.cutSeq = seq; m.cutOrig = orig; });
     canvas.remove(best.l); parts.forEach(m => canvas.add(m));
     return true;
@@ -7528,7 +7892,7 @@ window.__LUCIDE = {"crop": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"
       dims.forEach(g => {
         const na = mv(g.dimA), nb = mv(g.dimB); if (!na && !nb) return;
         const a = na || g.dimA, b = nb || g.dimB, off = g.dimOff, wasActive = canvas.getActiveObject() === g;
-        canvas.remove(g); const n = window.__makeDim(a, b, off); if (n && g.knownLen) n.knownLen = g.knownLen; if (n && wasActive) canvas.setActiveObject(n);
+        canvas.remove(g); const n = window.__makeDim(a, b, off); if (n && g.knownLen) n.knownLen = g.knownLen; if (n && g.knownSrc) n.knownSrc = g.knownSrc; if (n && wasActive) canvas.setActiveObject(n);
       });
     } finally { suppressHist = prev; }
   }
@@ -7789,7 +8153,7 @@ window.__LUCIDE = {"crop": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"
   const $ = id => document.getElementById(id);
   const hint = G.hint, f2 = G.f2;
   const enc = new TextEncoder();
-  const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const esc = s => String(s == null ? '' : s).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\uFFFE\uFFFF]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
   /* ═════ ZIP（stored） ═════ */
   const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
@@ -7821,12 +8185,14 @@ window.__LUCIDE = {"crop": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"
     const list = fl ? fl.list : [{ name: '', json: null, scale: G.pxPerM }], cur = fl ? fl.cur : 0;
     list.forEach((f, i) => {
       if (i === cur) {
-        G.roomPolys().forEach(p => { const l = G.labelFor(p.roomId); out.push({ floor: f.name, name: l ? (l.text || '').split('\n')[0] : '房間', use: p.roomUse || '', kind: p.roomKind || 'main', m2: G.pxPerM ? p.roomPx2 / (G.pxPerM * G.pxPerM) : null }); });
+        const dp = G.roomDupIds();
+        G.roomPolys().forEach(p => { if (dp.has(p.roomId)) return; const l = G.labelFor(p.roomId); out.push({ floor: f.name, name: l ? (l.text || '').split('\n')[0] : '房間', use: p.roomUse || '', kind: p.roomKind || 'main', m2: p.roomBroken ? null : G.roomM2Of(p, G.pxPerM, G.roomPolys()) }); });
       } else if (f.json) {
         try {
           const objs = JSON.parse(f.json).objects || [], labs = {};
           objs.forEach(o => { if (o.name === '__roomlabel__') labs[o.roomFor] = (o.text || '').split('\n')[0]; });
-          objs.forEach(o => { if (o.name === '__room__' && !o.roomBroken) out.push({ floor: f.name, name: labs[o.roomId] || '房間', use: o.roomUse || '', kind: o.roomKind || 'main', m2: f.scale ? o.roomPx2 / (f.scale * f.scale) : null }); });
+          const seenF = new Set(), roomsF = objs.filter(o => o.name === '__room__');
+          objs.forEach(o => { if (o.name === '__room__' && !o.roomBroken) { const sg = G.faceSig(o); if (seenF.has(sg)) return; seenF.add(sg); out.push({ floor: f.name, name: labs[o.roomId] || '房間', use: o.roomUse || '', kind: o.roomKind || 'main', m2: G.roomM2Of(o, f.scale, roomsF) }); } });
         } catch (e) {}
       }
     });
@@ -7856,7 +8222,7 @@ window.__LUCIDE = {"crop": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"
       row([['陽台／露台', 1], '', '', KL.attached, { f: 'SUMIF(D' + first + ':D' + last + ',"' + KL.attached + '",E' + first + ':E' + last + ')' }, { f: 'E' + r + '/3.305785' }]);
       row([['增建（不計入）', 1], '', '', KL.extra, { f: 'SUMIF(D' + first + ':D' + last + ',"' + KL.extra + '",E' + first + ':E' + last + ')' }, { f: 'E' + r + '/3.305785' }]);
     }
-    row(['※ 面積為依圖面描繪與比例換算之估算值（牆中心線內），非實測、非權狀登記面積，僅供參考。']);
+    row(['※ 面積為依圖面描繪與比例換算之估算值（' + (G.netOn ? '已扣牆厚' : '牆中心線內') + '，與面積表同一口徑），非實測、非權狀登記面積，僅供參考。']);
     const NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main', R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
     const head = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
     return zip([
@@ -7999,12 +8365,15 @@ window.__LUCIDE = {"crop": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"
 
   /** 所有已知長度：牆（knownLen）＋尺寸線（knownLen） → [{o, dx, dy, m, kind}] */
   function knowns() {
-    const out = [];
+    const out = []; let skipped = 0;
     canvas.getObjects().forEach(o => {
       if (!(o.knownLen > 0)) return;
-      if (o.type === 'line' && !o._isHandle) { const e = G.absEnds(o); out.push({ o, dx: e.p2.x - e.p1.x, dy: e.p2.y - e.p1.y, m: o.knownLen, kind: '牆' }); }
-      else if (o.name === '尺寸線' && o.dimA && o.dimB) out.push({ o, dx: o.dimB.x - o.dimA.x, dy: o.dimB.y - o.dimA.y, m: o.knownLen, kind: '尺寸線' });
+      const cm = window.__geju16 && window.__geju16.centerOfObj ? window.__geju16.centerOfObj(o) : o.knownLen;       // 與軸線法同一個「換成中心線」規則
+      if (!(cm > 0)) { skipped++; return; }
+      if (o.type === 'line' && !o._isHandle) { const e = G.absEnds(o); out.push({ o, dx: e.p2.x - e.p1.x, dy: e.p2.y - e.p1.y, m: cm, kind: '牆' }); }
+      else if (o.name === '尺寸線' && o.dimA && o.dimB) out.push({ o, dx: o.dimB.x - o.dimA.x, dy: o.dimB.y - o.dimA.y, m: cm, kind: '尺寸線' });
     });
+    window.__skipXY = skipped;
     return out.filter(k => Math.hypot(k.dx, k.dy) > 3);
   }
   /** 解 m² = a·dx² + b·dy²（a＝1/橫比例²、b＝1/直比例²） */
@@ -8054,7 +8423,7 @@ window.__LUCIDE = {"crop": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"
           const c = o.getCenterPoint(); o.setPositionByOrigin(new fabric.Point(c.x, Y(c.y)), 'center', 'center'); o.setCoords();   // 家具、門窗、文字、圖例：只移位置，不變形
         }
       });
-      dims.forEach(g => { const a = { x: g.dimA.x, y: Y(g.dimA.y) }, b = { x: g.dimB.x, y: Y(g.dimB.y) }, off = g.dimOff, kl = g.knownLen; canvas.remove(g); const n = window.__makeDim(a, b, off); if (n && kl) n.knownLen = kl; });
+      dims.forEach(g => { const a = { x: g.dimA.x, y: Y(g.dimA.y) }, b = { x: g.dimB.x, y: Y(g.dimB.y) }, off = g.dimOff, kl = g.knownLen, ks = g.knownSrc; canvas.remove(g); const n = window.__makeDim(a, b, off); if (n && kl) n.knownLen = kl; if (n && ks) n.knownSrc = ks; });
     } finally { suppressHist = prev; }
     G.setScale(sx, true);
     if (window.__geju13 && window.__geju13.snapEnds) window.__geju13.snapEnds();       // 這次是整體伸縮，不要讓「尺寸線跟著牆走」再挪一次
@@ -8065,7 +8434,7 @@ window.__LUCIDE = {"crop": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"
     const pct = (r.ratio - 1) * 100, maxE = Math.max(...r.rows.map(x => Math.abs(x.err))) * 100;
     if (!silent && !confirm('依 ' + r.rows.length + ' 個已知長度估算：\n・橫向 1 公尺 ＝ ' + f2(r.sx) + ' 單位\n・直向 1 公尺 ＝ ' + f2(r.sy) + ' 單位\n→ ' + desc(r) + '\n\n要把整張圖直向' + (pct > 0 ? '拉長' : '縮短') + ' ' + Math.abs(pct).toFixed(1) + '%，讓兩個方向一致嗎？（牆、房間、門窗、文字、尺寸線、底圖一起動；Ctrl+Z 可復原）\n調整後各已知長度的最大誤差約 ' + maxE.toFixed(1) + '%')) return r;
     stretchY(r.ratio, r.sx);
-    hint('已調整：直向' + (pct > 0 ? '拉長' : '縮短') + ' ' + Math.abs(pct).toFixed(1) + '%，比例 1 公尺＝' + f2(r.sx) + ' 單位；坪數已重算（最大誤差約 ' + maxE.toFixed(1) + '%）', 7000);
+    hint('已調整：直向' + (pct > 0 ? '拉長' : '縮短') + ' ' + Math.abs(pct).toFixed(1) + '%，比例 1 公尺＝' + f2(r.sx) + ' 單位；坪數已重算（最大誤差約 ' + maxE.toFixed(1) + '%）' + (window.__skipXY ? '；另有 ' + window.__skipXY + ' 個已知長度的端點不在牆上，沒有納入' : ''), 7000);
     return r;
   };
 
@@ -8128,17 +8497,20 @@ window.__LUCIDE = {"crop": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"
   const saveT = () => { try { localStorage.setItem('geju.wallT2', JSON.stringify(T)); } catch (e) {} };
 
   /* ── 已知長度（牆、尺寸線） ── */
+  const numLen = v => { if (typeof v === 'boolean' || v == null) return null; const n = typeof v === 'number' ? v : (typeof v === 'string' && v.trim() !== '' ? Number(v) : NaN); return Number.isFinite(n) && n > 0 ? n : null; };
   function items() {
     const out = [];
     canvas.getObjects().forEach(o => {
-      if (!(o.knownLen > 0)) return;
+      const kl = numLen(o.knownLen); if (!kl) return;
       let a, b;
       if (o.type === 'line' && !o._isHandle) { const e = G.absEnds(o); a = e.p1; b = e.p2; }
       else if (o.name === '尺寸線' && o.dimA && o.dimB) { a = o.dimA; b = o.dimB; }
       else return;
       const dx = b.x - a.x, dy = b.y - a.y; if (Math.hypot(dx, dy) < 3) return;
-      const dir = Math.abs(dx) > Math.abs(dy) * 2 ? 'x' : Math.abs(dy) > Math.abs(dx) * 2 ? 'y' : null;
-      out.push({ o, a, b, dir, m: o.knownLen, src: o.knownSrc || 'survey', kind: o.type === 'line' ? '牆' : '尺寸線' });
+      // 只有「幾乎水平／垂直」（約 2° 以內）才算橫、直；否則視為斜，不參與校正（原本放寬到約 26°，15° 的斜線也會被當成橫向長度）
+      const TILT = 0.035;
+      const dir = Math.abs(dy) <= Math.abs(dx) * TILT ? 'x' : Math.abs(dx) <= Math.abs(dy) * TILT ? 'y' : null;
+      out.push({ o, a, b, dir, m: kl, src: o.knownSrc || 'survey', kind: o.type === 'line' ? '牆' : '尺寸線' });
     });
     return out;
   }
@@ -8157,15 +8529,110 @@ window.__LUCIDE = {"crop": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"
   }
   const nearest = (ax, v) => { let bi = 0, bd = Infinity; ax.forEach((a, i) => { const d = Math.abs(a - v); if (d < bd) { bd = d; bi = i; } }); return bi; };
 
-  /** 把已知長度換成「牆中心線距離」（公尺）：成果圖量到外牆外緣、實量量到牆面 */
-  function toCenter(it, ia, ib, n) {
-    const outer = i => i === 0 || i === n - 1;
-    let L = it.m;
-    [ia, ib].forEach(i => {
-      if (it.src === 'survey') { if (outer(i)) L -= T.ext / 2; }
-      else if (it.src === 'measure') L += (outer(i) ? T.ext : T.int) / 2;
+  /* ── 外牆判斷（F10）：只看「實線牆」的軸線，虛線、尺寸線端點、圖外的雜線都不算；
+        尺寸線端點落在最外側牆軸線 → 外牆；落在其他牆軸線 → 內牆；哪面牆都不靠 → 不明（不猜、不調整） ── */
+  /** 主體牆線：實線牆中「互相連得起來、總長最長」的那一群；圖外孤立的雜線、註記線不算 */
+  function mainWallLines() {
+    const ls = canvas.getObjects().filter(o => o.type === 'line' && !o._isHandle && !(o.strokeDashArray && o.strokeDashArray.length)).map(o => ({ o, e: G.absEnds(o) }));
+    if (ls.length < 2) return ls;
+    const tol = Math.max(3, 0.04 * (G.pxPerM || 40));
+    const dseg = (p, e) => { const dx = e.p2.x - e.p1.x, dy = e.p2.y - e.p1.y, L2 = dx * dx + dy * dy; let t = L2 ? ((p.x - e.p1.x) * dx + (p.y - e.p1.y) * dy) / L2 : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(p.x - (e.p1.x + t * dx), p.y - (e.p1.y + t * dy)); };
+    const par = ls.map((_, i) => i), find = i => { while (par[i] !== i) { par[i] = par[par[i]]; i = par[i]; } return i; };
+    for (let i = 0; i < ls.length; i++) for (let j = i + 1; j < ls.length; j++) {
+      const a = ls[i].e, b = ls[j].e;
+      if (dseg(a.p1, b) <= tol || dseg(a.p2, b) <= tol || dseg(b.p1, a) <= tol || dseg(b.p2, a) <= tol) par[find(i)] = find(j);
+    }
+    const byCut = {};                                           // 同一道牆被門洞切成幾段：算同一群（否則門洞之間的短牆會被排除）
+    ls.forEach((x, i) => { const id = x.o.cutBy; if (id) (byCut[id] = byCut[id] || []).push(i); });
+    Object.keys(byCut).forEach(id => { const a = byCut[id]; for (let k = 1; k < a.length; k++) par[find(a[k])] = find(a[0]); });
+    ls.forEach((x, i) => { const pr = x.o.cutOrig && x.o.cutOrig.parent; if (pr && byCut[pr.cutBy]) par[find(i)] = find(byCut[pr.cutBy][0]); });
+    const sum = new Map(); ls.forEach((x, i) => { const r = find(i); sum.set(r, (sum.get(r) || 0) + Math.hypot(x.e.p2.x - x.e.p1.x, x.e.p2.y - x.e.p1.y)); });
+    let best = -1, bl = -1; sum.forEach((v, r) => { if (v > bl) { bl = v; best = r; } });
+    return ls.filter((x, i) => find(i) === best);
+  }
+  function wallAxesOf(dim, ml) {
+    const pm = G.pxPerM || 40, tol = Math.max(2, 0.04 * pm), vals = [];
+    (ml || mainWallLines()).forEach(x => { vals.push(x.e.p1[dim], x.e.p2[dim]); });
+    vals.sort((p, q) => p - q);
+    const cl = [];
+    vals.forEach(v => { const c = cl[cl.length - 1]; if (c && v - c.max <= tol) { c.sum += v; c.n++; c.max = v; } else cl.push({ sum: v, n: 1, max: v }); });
+    return cl.map(c => c.sum / c.n);
+  }
+  function endKind(v, wax) {
+    if (!wax || wax.length < 2) return 'unknown';
+    const tol = Math.max(4, 0.08 * (G.pxPerM || 40)), lo = wax[0], hi = wax[wax.length - 1];
+    if (Math.abs(v - lo) <= tol || Math.abs(v - hi) <= tol) return 'outer';
+    if (wax.some(a => Math.abs(a - v) <= tol)) return 'inner';
+    return 'unknown';
+  }
+  /** 位在「中間」的牆軸線，不一定是內牆：凹形外牆、U 形缺口兩側、彎折的室外通道兩側的牆都不在最外側，卻是外牆。
+      做法：用房間偵測同一套幾何（牆圍出的封閉區域），判斷牆「兩側」的取樣點是不是落在某個封閉區域裡＝室內：
+        兩側都在室內＝內牆；有一側在室外＝外牆；同一側各取樣點結果不一致、或這個位置沒有牆＝unknown（不猜，停止換算）。
+      門洞：被門切開的牆，缺口用原牆「虛擬補連」。取樣離牆只有半個牆厚＋2 單位（不會跨過窄房間）。 */
+  let faceCache = { sig: null, polys: null };
+  function innerFaces(ml) {
+    const segs = ml.map(x => [x.e.p1.x, x.e.p1.y, x.e.p2.x, x.e.p2.y]);
+    ml.forEach(x => { let c = x.o.cutOrig; while (c) { if (c.pA && c.pB) segs.push([c.pA.x, c.pA.y, c.pB.x, c.pB.y]); c = c.parent && c.parent.cutOrig; } });
+    const sig = segs.map(g => g.map(v => Math.round(v * 1000)).join(',')).join('|') + '#' + (G.pxPerM || 0);        // 精確座標＋精確比例：封口門檻附近的 0.2 單位變動也會讓快取失效
+    if (faceCache.sig === sig) return faceCache.polys;
+    let polys = null;
+    try {
+      if (segs.length && segs.length <= 900) {
+        const gap = Math.max(4, 0.05 * (G.pxPerM || 40)), br = GejuGeo.addBridges(segs, gap), g = GejuGeo.buildGraph(segs.concat(br));
+        polys = GejuGeo.traceFaces(g).filter(f => f.area * GejuGeo_INNER_SIGN > 0).map(f => f.ids.map(i => g.nodes[i]));
+      }
+    } catch (e) { polys = null; }
+    faceCache = { sig, polys };
+    return polys;
+  }
+  function refineKind(dim, v, qv, kind, ml) {
+    if (kind !== 'inner') return kind;
+    const q = dim === 'x' ? 'y' : 'x', tol = Math.max(3, 0.04 * (G.pxPerM || 40));
+    const same = ml.filter(x => Math.abs(x.e.p1[dim] - v) <= tol && Math.abs(x.e.p2[dim] - v) <= tol && Math.min(x.e.p1[q], x.e.p2[q]) - tol <= qv && Math.max(x.e.p1[q], x.e.p2[q]) + tol >= qv);
+    if (!same.length) return 'unknown';                         // 這個位置其實沒有牆
+    const polys = innerFaces(ml); if (!polys) return 'unknown';
+    const off = Math.max(...same.map(x => (x.o.strokeWidth || 6) / 2)) + 2;
+    const step = Math.max(4, 0.1 * (G.pxPerM || 40));
+    let q0 = Infinity, q1 = -Infinity; same.forEach(x => { q0 = Math.min(q0, x.e.p1[q], x.e.p2[q]); q1 = Math.max(q1, x.e.p1[q], x.e.p2[q]); });
+    const qs = [-2, -1, 0, 1, 2].map(k => qv + k * step).filter(t => t >= q0 + tol * 0.5 && t <= q1 - tol * 0.5);
+    if (!qs.length) qs.push(qv);
+    const yards = G.roomPolys().filter(y => y.roomKind === 'yard' && y.points);            // 使用者已量測並標成「庭院／天井（不計）」的區域＝露天，面向它的牆是外牆
+    const inside = P => polys.some(poly => GejuGeo.pointInPoly(P.x, P.y, poly)) && !yards.some(y => GejuGeo.pointInPoly(P.x, P.y, y.points));
+    const sideOf = sg => { const r = qs.map(t => { const P = {}; P[dim] = v + sg * off; P[q] = t; return inside(P); }); return r.every(Boolean) ? 'in' : (r.some(Boolean) ? 'mixed' : 'out'); };
+    const L = sideOf(-1), R = sideOf(1);
+    if (L === 'mixed' || R === 'mixed') return 'unknown';
+    return (L === 'in' && R === 'in') ? 'inner' : 'outer';
+  }
+  /** 本次計算實際使用的外牆厚：開「自動反推」且有「成果圖＋實量」同一整段時用反推值，否則用設定值（只計算用，不改設定）；三個校正入口共用 */
+  function extInfo() {
+    if (!T.auto) return { ext: T.ext, derived: false };
+    const a = autoExt(items());
+    return a.length ? { ext: a.reduce((s, r) => s + r.t, 0) / a.length, derived: true } : { ext: T.ext, derived: false };
+  }
+  /** 把已知長度換成「牆中心線距離」（公尺）：成果圖量到外牆外緣、實量量到牆面；三種校正入口（牆長、橫直分開、軸線法）共用這一個。
+      兩端有任何一端「不靠任何牆」（不明）→ 回傳 null：不猜、不換算、不納入校正 */
+  function centerM(it) {
+    if (!it || !it.dir || it.src === 'center') return it ? it.m : null;      // 斜的、或本來就是中心線：不換算
+    const dim = it.dir, ml = mainWallLines(), wax = wallAxesOf(dim, ml), E = extInfo().ext; let L = it.m;
+    const qd = dim === 'x' ? 'y' : 'x';
+    const ks = [it.a, it.b].map(pt => refineKind(dim, pt[dim], pt[qd], endKind(pt[dim], wax), ml));
+    if (ks.indexOf('unknown') >= 0) return null;
+    ks.forEach(k => {
+      if (it.src === 'survey') { if (k === 'outer') L -= E / 2; }
+      else if (it.src === 'measure') { if (k === 'outer') L += E / 2; else if (k === 'inner') L += T.int / 2; }
     });
     return L;
+  }
+  function toCenter(it) { return centerM(it); }
+  /** 給其他校正入口用：傳入帶 knownLen 的牆或尺寸線物件 → 中心線公尺數 */
+  function centerOfObj(o) {
+    let a, b;
+    if (o.type === 'line' && !o._isHandle) { const e = G.absEnds(o); a = e.p1; b = e.p2; }
+    else if (o.name === '尺寸線' && o.dimA && o.dimB) { a = o.dimA; b = o.dimB; }
+    else return numLen(o.knownLen);
+    const dx = b.x - a.x, dy = b.y - a.y, TILT = 0.035, kl = numLen(o.knownLen); if (!kl) return null;
+    const dir = Math.abs(dy) <= Math.abs(dx) * TILT ? 'x' : Math.abs(dx) <= Math.abs(dy) * TILT ? 'y' : null;
+    return centerM({ a, b, dir, m: kl, src: o.knownSrc || 'survey' });
   }
   /** 同一段同時有成果圖與實量 → 反推外牆厚 */
   function autoExt(list) {
@@ -8173,7 +8640,10 @@ window.__LUCIDE = {"crop": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"
     ['x', 'y'].forEach(dim => {
       const S = list.filter(i => i.dir === dim && i.src === 'survey'), M = list.filter(i => i.dir === dim && i.src === 'measure');
       const span = i => [Math.min(i.a[dim], i.b[dim]), Math.max(i.a[dim], i.b[dim])];
-      S.forEach(s => M.forEach(m => { const p = span(s), q = span(m), tol = Math.max(4, (G.pxPerM || 40) * 0.4); if (Math.abs(p[0] - q[0]) < tol && Math.abs(p[1] - q[1]) < tol) { const t = (s.m - m.m) / 2; if (t > 0.05 && t < 0.5) res.push({ t, s, m }); } }));
+      // 只有「兩端都落在最外側軸線」的整段才能反推外牆厚；內牆之間的差值不是外牆厚
+      const waxd = wallAxesOf(dim);
+      const outerSpan = i => endKind(i.a[dim], waxd) === 'outer' && endKind(i.b[dim], waxd) === 'outer' && Math.abs(i.a[dim] - i.b[dim]) > 3;
+      S.forEach(s => M.forEach(m => { if (!outerSpan(s) || !outerSpan(m)) return; const p = span(s), q = span(m), tol = Math.max(4, (G.pxPerM || 40) * 0.4); if (Math.abs(p[0] - q[0]) < tol && Math.abs(p[1] - q[1]) < tol) { const t = (s.m - m.m) / 2; if (t > 0.05 && t < 0.5) res.push({ t, s, m }); } }));
     });
     return res;
   }
@@ -8183,7 +8653,7 @@ window.__LUCIDE = {"crop": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"
     const pm = G.pxPerM, its = list.filter(i => i.dir === dim);
     const ax = axes(dim, its.flatMap(i => [i.a[dim], i.b[dim]])), n = ax.length;
     if (n < 2 || !its.length) return { ax, X: ax.slice(), rows: [], k: 1 };
-    const cons = its.map(it => { let ia = nearest(ax, it.a[dim]), ib = nearest(ax, it.b[dim]); if (ia > ib) [ia, ib] = [ib, ia]; return { it, ia, ib, L: toCenter(it, ia, ib, n) * pm }; }).filter(c => c.ia !== c.ib && c.L > 1);
+    const cons = its.map(it => { let ia = nearest(ax, it.a[dim]), ib = nearest(ax, it.b[dim]); if (ia > ib) [ia, ib] = [ib, ia]; return { it, ia, ib, L: toCenter(it) * pm }; }).filter(c => c.ia !== c.ib && c.L > 1);
     // 這個方向的整體縮放（沒給數字的區間照「整體縮放後的原比例」）
     let num = 0, den = 0; cons.forEach(c => { const d = ax[c.ib] - ax[c.ia]; num += c.L * d; den += d * d; });
     const k = den ? num / den : 1;
@@ -8214,10 +8684,13 @@ window.__LUCIDE = {"crop": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"
     if (!G.pxPerM) return { err: '先校正比例（至少用一道已知長度定一次），軸線法才知道 1 公尺是幾單位' };
     const list = items(); if (!list.length) return { err: '還沒有任何已知長度' };
     let note = '';
-    if (T.auto) { const a = autoExt(list); if (a.length) { T.ext = a.reduce((s, r) => s + r.t, 0) / a.length; note = '外牆厚由「成果圖 vs 實量」自動算出 ' + Math.round(T.ext * 100) + ' cm'; } }
+    const ei = extInfo();                         // 三個校正入口共用這一份有效外牆厚；只用在計算，不改你設定的牆厚
+    if (ei.derived) note = '外牆厚由「成果圖 vs 實量」自動算出 ' + Math.round(ei.ext * 100) + ' cm（三種校正都用這個值；只用在這次計算，不改你設定的牆厚）';
+    const unk = list.filter(i => i.dir && i.src !== 'center' && centerM(i) == null);        // 兩端有一端不靠任何牆：不明，不納入
+    if (unk.length) note += (note ? '；' : '') + unk.length + ' 個已知長度無法確定端點是外牆還是內牆（端點不在牆上，或牆兩側的判斷不一致），這次不納入校正，請確認這些長度的端點位置';
     const sx = solveDim('x', list); if (sx.err) return sx;
     const sy = solveDim('y', list); if (sy.err) return sy;
-    return { sx, sy, list, note, diag: list.filter(i => !i.dir).length };
+    return { sx, sy, list, note, diag: list.filter(i => !i.dir).length, unknown: unk.length };
   }
 
   /* ── 分段線性對應 ── */
@@ -8271,7 +8744,8 @@ window.__LUCIDE = {"crop": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"
   window.gejuAxisFit = async function (silent) {
     const P = plan(); if (P.err) { hint(P.err, 5000); return P; }
     const rows = P.sx.rows.concat(P.sy.rows), maxE = Math.max(0, ...rows.map(r => Math.abs(r.err))) * 100;
-    if (!silent && !confirm('軸線法：用 ' + rows.length + ' 個已知長度調整（橫 ' + P.sx.rows.length + '、直 ' + P.sy.rows.length + '）\n・相連的牆保持相連、橫直不變、房間順序不變\n・沒給數字的區間照原本比例\n・底圖會一起變形，仍然對得上\n' + (P.note ? '・' + P.note + '\n' : '') + '\n調整後最大誤差約 ' + maxE.toFixed(1) + '%。要調整嗎？（Ctrl+Z 可復原）')) return P;
+    if (!rows.length) { if (!silent) hint('沒有可用來調整的橫向或直向已知長度' + (P.diag ? '（' + P.diag + ' 個斜的已知長度不參與，圖維持原樣）' : ''), 5000); return P; }
+    if (!silent && !confirm('軸線法：用 ' + rows.length + ' 個已知長度調整（橫 ' + P.sx.rows.length + '、直 ' + P.sy.rows.length + '）\n・相連的牆保持相連、橫直不變、房間順序不變\n・沒給數字的區間照原本比例\n・底圖會一起變形，仍然對得上\n' + (P.diag ? '・有 ' + P.diag + ' 個斜的已知長度不參與，調整後不保證它們的長度\n' : '') + (P.note ? '・' + P.note + '\n' : '') + '\n調整後最大誤差約 ' + maxE.toFixed(1) + '%。要調整嗎？（Ctrl+Z 可復原）')) return P;
     await apply(P);
     hint('已用軸線法調整：' + rows.length + ' 個已知長度，最大誤差 ' + maxE.toFixed(1) + '%' + (P.diag ? '；' + P.diag + ' 個斜的已知長度沒有參與' : ''), 7000);
     return P;
@@ -8315,7 +8789,7 @@ window.__LUCIDE = {"crop": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"
     box.insertAdjacentHTML('beforeend', h + '</div></div>');
   };
 
-  window.__geju16 = { items, axes, plan, solveDim, mapper, apply, toCenter, T };
+  window.__geju16 = { items, axes, plan, solveDim, mapper, apply, toCenter, centerM, centerOfObj, wallAxesOf, mainWallLines, extInfo, numLen, T };
 })();
 
 </script>
@@ -8377,7 +8851,7 @@ window.__LUCIDE = {"crop": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"
     { t: '⑦ 用已知尺寸修正', d: '格局圖常常沒照比例。把成果圖或實量的長度填進牆的「已知長度」（並選來源：成果圖／實量），到面積表按「🧭 軸線法」，只修間距、不破壞格局。', el: () => ft('面積表') },
     { t: '⑧ 輸出', d: 'PNG、A4 一頁版、帶比例 PDF（Acrobat 可量公尺）、Excel 面積表、各樓層簡報，都在這裡。輸出前會自動檢查有沒有漏掉的地方。', el: () => tb('輸出') },
     { t: '⑨ 2.5D 與展示', d: '「2.5D」一鍵產生裝修示意（有用途的房間會自動擺家具）；「展示」是帶看用的全螢幕模式。', el: () => tb('2.5D') },
-    { t: '完成！', d: '說明書在右上角「說明」，照工作順序寫，可以搜尋。遇到怪怪的地方，先按「自我檢查」，全綠代表程式本身沒問題。', el: () => tb('說明') }
+    { t: '完成！', d: '說明書在右上角「說明」，照工作順序寫，可以搜尋。遇到怪怪的地方，先按「自我檢查」：全綠代表「內建的情境」都通過，不代表所有情況都正常；重要的圖請先另存專案，並用真實案例再核對一次。', el: () => tb('說明') }
   ];
   let si = 0, mask = null, tip = null;
   function place() {
@@ -8487,12 +8961,12 @@ window.__LUCIDE = {"crop": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"
     S('faq', '常見問題', `
       <div class="st"><b>Q：畫水平線出來是斜的？</b>舊版的錯，已修。請 <kbd>Ctrl+F5</kbd> 重新整理到新版。</div>
       <div class="st"><b>Q：輸出一半橘一半黑？</b>橘色是自動描的線，按「⬛ 橘線轉黑」或任一「風格」。</div>
-      <div class="st"><b>Q：填已知長度後一直跑調？</b>「已知長度」每填一次都在算比例。比例只定一次，之後用「軸線法」或「牆長」修。</div>
+      <div class="st"><b>Q：填已知長度後比例會自己跑掉？</b>在尺寸列「實際長度」旁按<b>「以此校正比例」</b>（或按 Enter）才會改整張圖的比例；按<b>「加入估算」</b>只是記下這段的真實長度，不會立刻改比例。要一次用多段長度校正，再用「牆長校正」「橫直分開估算」或「軸線法」。三種方法都會先把成果圖的外緣換成牆中心線（外牆厚預設 20 cm，是假設，可在面積表改）。</div>
       <div class="st"><b>Q：數字和成果圖對不上？</b>成果圖量到外牆外緣、實量量到牆面、我們的牆線是中心線——填的時候選對「來源」，軸線法會自動換算。</div>
       <div class="st"><b>Q：房間量出一大片？</b>附近有牆沒接上：按 <kbd>T</kbd> 整理，或補一道牆。</div>
       <div class="st"><b>Q：2.5D 沒有家具？</b>房間要有用途（改房名＋依房名配色，或面積表選用途）；形狀太不規則或太小也會擺得少。</div>
       <div class="st"><b>Q：改了沒反應？</b>按 <kbd>Ctrl+F5</kbd> 強制重新整理，再按「接回去」。</div>
-      <div class="st"><b>Q：怕程式出錯？</b>按「自我檢查」，全綠＝程式本身正常（會借用畫布測試、跑完自動還原）。</div>`)
+      <div class="st"><b>Q：怕程式出錯？</b>按「自我檢查」，全綠＝內建的 64 項情境都通過（會暫時借用畫布，跑完自動還原；不代表所有操作都沒問題）。重要的圖請先「存專案」。</div>`)
   ];
   const mp = document.createElement('div'); mp.id = 'manPop';
   mp.innerHTML = '<div class="mh"><h2>📖 格局神器 V10 使用說明書</h2><input id="manQ" type="search" placeholder="搜尋，例如：比例、橘線、成果圖"><button class="ap-btn" id="manTour">▶ 新手教學</button><button class="ap-btn" id="manOld">舊版說明</button><button class="ap-btn" id="manX">✕</button></div>' +
@@ -8530,6 +9004,34 @@ window.__LUCIDE = {"crop": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"
   window.__geju17 = { STEPS, DOC, startTour, endTour };
 })();
 
+</script>
+<script>
+/* 修正：頂端工具列 overflow:hidden 會把往下展開的選單（輸出、風格）裁掉 → 展開時改用 fixed 定位 */
+(function () {
+  function place(m) {
+    try {
+      const a = m.parentElement; if (!a) return; const r = a.getBoundingClientRect();
+      m.style.position = 'fixed'; m.style.top = (r.bottom + 4) + 'px'; m.style.right = 'auto';
+      const w = m.offsetWidth || 190; m.style.left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8)) + 'px';
+    } catch (e) {}
+  }
+  function watch(id) {
+    const m = document.getElementById(id); if (!m) return false;
+    new MutationObserver(() => { if (m.classList.contains('show')) place(m); }).observe(m, { attributes: true, attributeFilter: ['class'] });
+    return true;
+  }
+  function init() { const t = ['exMenu', 'stMenu']; let n = 0; (function tick() { const miss = t.filter(i => !watch.done || !watch.done[i] ? (watch.done = watch.done || {}, watch.done[i] = watch(i)) === false : false); if (miss.length && n++ < 40) setTimeout(tick, 250); })(); }
+  init();
+})();
+(function addDoorOpts() {
+  const pop = document.getElementById('snapPop'); if (!pop) return setTimeout(addDoorOpts, 300);
+  let auto = true; try { auto = localStorage.getItem('geju_doorAuto') !== '0'; } catch (e) {}
+  window.__doorAuto = auto;
+  const d = document.createElement('div'); d.style.cssText = 'border-top:1px solid rgba(0,0,0,.1);margin-top:6px;padding-top:6px';
+  d.innerHTML = '<b>門窗吸牆</b><br><label><input type="radio" name="doorSnap" value="auto"' + (auto ? ' checked' : '') + '> 自動（拖曳時吸牆）</label><br><label><input type="radio" name="doorSnap" value="manual"' + (auto ? '' : ' checked') + '> 手動（選到門窗按 G 才吸）</label><br><span style="color:#888">推門選到後按 X 可翻轉開門方向</span>';
+  pop.appendChild(d);
+  d.querySelectorAll('input').forEach(r => r.onchange = () => { window.__doorAuto = r.value === 'auto'; try { localStorage.setItem('geju_doorAuto', window.__doorAuto ? '1' : '0'); } catch (e) {} });
+})();
 </script>
 </body>
 </html>
